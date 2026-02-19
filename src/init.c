@@ -47,8 +47,7 @@ eeprom_ok:
   }
   return -ETIMEDOUT;
 dmaiok:;
-  /* Will be continued from sixth step of title '4.6.3 Initialization Sequence'.
-   * fifth step was skipped. */
+  /* fifth step was skipped. See commit logs.*/
   /* As sixth step, 'Initialize all statistical counters', only GPRC, GPTC,
    * TPR and TPT will be observed. Read operation provides resetting.
    * This registers will be read from another core to debug receive/transmit
@@ -58,6 +57,38 @@ dmaiok:;
   (void)ixgbe_read_reg(hw, IXGBE_GPTC);
   (void)ixgbe_read_reg(hw, IXGBE_TPR);
   (void)ixgbe_read_reg(hw, IXGBE_TPT);
+  /* 7. Initialize receive (see Section 4.6.7). */
+  /* Provides mac addresses for VM's, will be cleared from 1-127. */
+  for (u8 i = 1; i < 128; i++) {
+    u32 read_val = ixgbe_read_reg(hw, IXGBE_RAH + i * 8);
+    IXGBE_CLEAR_BITS(read_val, IXGBE_RAH_AV);
+    ixgbe_write_reg(hw, IXGBE_RAH + i * 8, read_val);
+  }
+  for (u8 i = 0; i < 128; i++) {
+    ixgbe_write_reg(hw, IXGBE_PFUTA + i * 4, 0x0);
+  }
+  /* Vlan's will not be used in this PoC. */
+  for (u8 i = 0; i < 128; i++) {
+    ixgbe_write_reg(hw, IXGBE_VFTA + i * 4, 0x0);
+  }
+  for (u8 i = 0; i < 64; i++) {
+    ixgbe_write_reg(hw, IXGBE_PFVLVF + i * 4, 0x0);
+  }
+  for (u16 i = 1; i < 256; i++) {
+    ixgbe_write_reg(hw, IXGBE_MPSAR + i * 4, 0x0);
+  }
+  for (u8 i = 0; i < 128; i++) {
+    ixgbe_write_reg(hw, IXGBE_PFVLVFB + i * 4, 0x0);
+  }
+  /* Disable error correcting debugging.
+   * Provides ECC for the Rx filter memory that is disabled.
+   * Doesn't affect the functionality of correcting 1 bit flip,
+   * while enabling it may stop Rx on 2-3 bit errors.
+   */
+  u32 read_val = ixgbe_read_reg(hw,IXGBE_RXFECCERR0);
+  IXGBE_CLEAR_BITS(read_val,IXGBE_RXFECCERR0_ECCFLT_EN);
+  ixgbe_write_reg(hw,IXGBE_RXFECCERR0,read_val);
+  /* Rx offloads needs to be decided before continuing. */
 
   return 0;
 }

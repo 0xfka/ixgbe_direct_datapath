@@ -257,6 +257,26 @@
 /* Total Packets Transmitted Register */
 #define IXGBE_TPT 0x040D4
 
+/* Receive Initialization */
+/* Receive Address Low — RAL[n] + 8*n,n=0...127 */
+#define IXGBE_RAL 0x0A200
+/* Receive Address High — RAH[n] + 8*n, n=0...127 */
+#define IXGBE_RAH 0x0A204
+#define IXGBE_RAH_AV (1U << 31)
+/* PF Unicast Table Array — PFUTA[n] + 4*n,n=0...127 */
+#define IXGBE_PFUTA 0x0F400
+/* VLAN Filter Table Array — VFTA[n] + 4*n, n=0...127 */
+#define IXGBE_VFTA 0x0A000
+/* PF VM VLAN Pool Filter — PFVLVF[n] + 4*n,n=0...63 */
+#define IXGBE_PFVLVF 0x0F100
+/* MAC Pool Select Array — MPSAR[n] + 4*n,n=0...255 */
+#define IXGBE_MPSAR 0x0A600
+/* PF VM VLAN Pool Filter Bitmap — PFVLVFB[n] + 4*n, n=0...127 */
+#define IXGBE_PFVLVFB 0x0F200
+/* Rx Filter ECC Err Insertion 0 */
+#define IXGBE_RXFECCERR0 0x051B8
+#define IXGBE_RXFECCERR0_ECCFLT_EN (1 << 9)
+
 #define IXGBE_SWFW_EEP_SM    (1 << 0)
 #define IXGBE_SWFW_PHY0_SM   (1 << 1)
 #define IXGBE_SWFW_PHY1_SM   (1 << 2)
