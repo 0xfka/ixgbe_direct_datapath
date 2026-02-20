@@ -53,6 +53,12 @@ dmaiok:;
    * This registers will be read from another core to debug receive/transmit
    * steps.
    */
+   /* Update: According to Specification Update july 2024 errata 7,
+    * GPRC and GORCL/H also counts missed packets. While GPRC is decided for
+    * future observing implementation. Solutions are;
+    * Reading MPC and subtracting or using QPRC.
+    * Note that GORCL/H is already not going to be used.
+    */
   (void)ixgbe_read_reg(hw, IXGBE_GPRC);
   (void)ixgbe_read_reg(hw, IXGBE_GPTC);
   (void)ixgbe_read_reg(hw, IXGBE_TPR);
