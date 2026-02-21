@@ -113,8 +113,52 @@ dmaiok:;
   u32 read_val = ixgbe_read_reg(hw, IXGBE_RXFECCERR0);
   IXGBE_CLEAR_BITS(read_val, IXGBE_RXFECCERR0_ECCFLT_EN);
   ixgbe_write_reg(hw, IXGBE_RXFECCERR0, read_val);
-  /* Rx offloads needs to be decided before continuing. */
-
+  /* Rx offloads */
+  /* Filter Control Registers */
+  /* Broadcast was cleared since the ARP will be hardcoded. */
+  read_val = ixgbe_read_reg(hw, IXGBE_FCTRL);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_BAM);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_MPE);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_SBP);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_UPE);
+  ixgbe_write_reg(hw,IXGBE_FCTRL,read_val);
+  /* Out of scope, disabled. */
+  read_val = ixgbe_read_reg(hw, IXGBE_VLNCTRL);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_VLNCTRL_VFE);
+  ixgbe_write_reg(hw,IXGBE_VLNCTRL,read_val);
+  read_val = ixgbe_read_reg(hw,IXGBE_MCSTCTRL);
+  IXGBE_CLEAR_BITS(read_val,IXGBE_MCSTCTRL_MFE);
+  ixgbe_write_reg(hw,IXGBE_MCSTCTRL,read_val);
+  /*  
+   * According to errata 44, spec update rev 4.3.3,   
+   * header splitting should not be enabled.
+   */
+  read_val = ixgbe_read_reg(hw, IXGBE_PSRTYPE);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_PSRTYPE_SPLIT_MASK);
+  ixgbe_write_reg(hw, IXGBE_PSRTYPE, read_val);
+  /*
+   * There's erratas that include unstable behavior 
+   * on checksums (43, 60 ,66) . As decided, 
+   * RFC 1624 will be used. 
+    */
+  read_val = ixgbe_read_reg(hw,IXGBE_RXCSUM);
+  IXGBE_CLEAR_BITS(read_val,IXGBE_RXCSUM_IPPCSE);
+  IXGBE_CLEAR_BITS(read_val,IXGBE_RXCSUM_PCSD);
+  ixgbe_write_reg(hw,IXGBE_RXCSUM,read_val);
+  /* 1 core polling data path architecture invalids RSS usage.*/
+  ixgbe_write_reg(hw, IXGBE_RQTC, 0x0);
+  /**/
+  read_val = ixgbe_read_reg(hw,IXGBE_RFCTL);
+  /* Disabled, may add latency to buffer packets. 
+   * Also, may cause TLP overhead on PCI but goal is lowest latency.*/
+  IXGBE_SET_BITS(read_val, IXGBE_RFCTL_RSC_DIS);
+  /* Disabled to prevent latency emerging from ASIC checking 
+   * the packet is NFS or not. */
+  IXGBE_SET_BITS(read_val, IXGBE_RFCTL_NFSW_DIS);
+  IXGBE_SET_BITS(read_val, IXGBE_RFCTL_NFSR_DIS);
+  /* IPv6 disable and IP Fragment Split Disable
+   *  will not set of 'for internal usage' warning. */
+  ixgbe_write_reg(hw,IXGBE_RFCTL,read_val);
   return 0;
 }
 /*

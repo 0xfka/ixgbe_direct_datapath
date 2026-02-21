@@ -14,9 +14,11 @@
 #define IXGBE_CTRL 0x00000
 #define IXGBE_CTRL_RST (1 << 26)
 #define IXGBE_CTRL_LRST (1 << 3)
+#define IXGBE_CTRL_MASTER (1 << 2)
 
 /* Device Status Register */
 #define IXGBE_STATUS 0x00008
+#define IXGBE_STATUS_MASTER (1 << 19)
 
 /* Extended Device Control Register */
 #define IXGBE_CTRL_EXT 0x00018
@@ -73,6 +75,7 @@
 
 /* Receive Control Register */
 #define IXGBE_RXCTRL 0x03000
+#define IXGBE_RXCTRL_RXEN (1 << 0)
 
 /* RSC Data Buffer Control Register */
 #define IXGBE_RSCDBU 0x03028
@@ -97,6 +100,8 @@
 
 /* MAC Core Control 0 Register */
 #define IXGBE_HLREG0 0x04240
+#define IXGBE_HLREG0_LPBK (1 << 15)
+
 
 /* Max Frame Size */
 #define IXGBE_MAXFRS 0x04268
@@ -135,21 +140,37 @@
 
 /* Receive Checksum Control */
 #define IXGBE_RXCSUM 0x05000
+#define IXGBE_RXCSUM_IPPCSE (1 << 12)
+#define IXGBE_RXCSUM_PCSD (1 << 13)
 
 /* Receive Filter Control Register */
 #define IXGBE_RFCTL 0x05008
+#define IXGBE_RFCTL_RSC_DIS (1 << 5)
+#define IXGBE_RFCTL_NFSW_DIS (1 << 6)
+#define IXGBE_RFCTL_NFSR_DIS (1 << 7)
+#define IXGBE_RFCTL_IPV6_DIS (1 << 10)
+#define IXGBE_RFCTL_IPFRSP_DIS (1 << 14)
 
 /* Multicast Table Array */
 #define IXGBE_MTA 0x05200
 
 /* Filter Control Register */
 #define IXGBE_FCTRL 0x05080
+#define IXGBE_FCTRL_SBP (1 << 1) // Store Bad Packets
+#define IXGBE_FCTRL_MPE (1 << 8) // Multicast Promiscuous Enable
+#define IXGBE_FCTRL_UPE (1 << 9) // Unicast Promiscuous Enable
+#define IXGBE_FCTRL_BAM (1 << 10) // Broadcast Accept Mode
 
 /* VLAN Control Register */
 #define IXGBE_VLNCTRL 0x05088
+#define IXGBE_VLNCTRL_VFE (1 << 30) // VLAN Filter Enable.
 
 /* Multicast Control Register */
 #define IXGBE_MCSTCTRL 0x05090
+#define IXGBE_MCSTCTRL_MFE (1 << 2)
+
+/* RSS Queues Per Traffic Class Register */
+#define IXGBE_RQTC 0x0EC70
 
 /* EType Queue Filter */
 #define IXGBE_ETQF 0x05128
@@ -207,6 +228,16 @@
 
 /* Five tuple Queue Filter */
 #define IXGBE_FTQF 0x0E600
+
+/* Packet Split Receive Type Register */
+#define IXGBE_PSRTYPE 0x0EA00
+#define IXGBE_PSRTYPE_TCPHDR      (1 << 4)
+#define IXGBE_PSRTYPE_UDPHDR      (1 << 5)
+#define IXGBE_PSRTYPE_IPV4HDR     (1 << 8)
+#define IXGBE_PSRTYPE_IPV6HDR     (1 << 9)
+#define IXGBE_PSRTYPE_L2HDR       (1 << 12)
+#define IXGBE_PSRTYPE_SPLIT_MASK  0x00001FFF /* Bits 12:0 */
+#define IXGBE_PSRTYPE_RQPL_SHIFT  29
 
 /* SYN Packet Queue Filter */
 #define IXGBE_SYNQF 0x0EC30
@@ -287,6 +318,10 @@
 #define IXGBE_FWFW_PHY1_SM   (1 << 7)
 #define IXGBE_FWFW_MAC_CSR_SM (1 << 8)
 #define IXGBE_FWFW_FLASH_SM  (1 << 9)
+
+/* PCIe Control Extended Register */
+#define IXGBE_GCR_EXT 0x11050
+#define IXGBE_GCR_EXT_BUFFERS_CLEAR_FUNC (1 << 30)
 
 typedef enum {
     SW_EEP_SM     = (1 << 0),
