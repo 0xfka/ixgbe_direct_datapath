@@ -31,7 +31,7 @@ int ixgbe_probe(const struct hw* hw) {
   delay = 10;
   for (u8 i = 0; i < 23; i++) {
     const u32 eeprom = ixgbe_read_reg(hw, IXGBE_EEC);
-    if (IXGBE_IS_SET(eeprom,IXGBE_EEC_ARD)) goto eeprom_ok;
+    if (IXGBE_IS_SET(eeprom, IXGBE_EEC_ARD)) goto eeprom_ok;
     usleep(delay);
     if (likely(delay < 1000)) delay *= 2;
   }
@@ -41,7 +41,7 @@ eeprom_ok:
   delay = 10;
   for (u8 i = 0; i < 23; i++) {
     const u32 dmaidone = ixgbe_read_reg(hw, IXGBE_RDRXCTL);
-    if (IXGBE_IS_SET(dmaidone,IXGBE_RDRXCTL_DMAIDONE)) goto dmaiok;
+    if (IXGBE_IS_SET(dmaidone, IXGBE_RDRXCTL_DMAIDONE)) goto dmaiok;
     usleep(delay);
     if (likely(delay < 1000)) delay *= 2;
   }
@@ -53,12 +53,12 @@ dmaiok:;
    * This registers will be read from another core to debug receive/transmit
    * steps.
    */
-   /* Update: According to Specification Update july 2024 errata 7,
-    * GPRC and GORCL/H also counts missed packets. While GPRC is decided for
-    * future observing implementation. Solutions are;
-    * Reading MPC and subtracting or using QPRC.
-    * Note that GORCL/H is already not going to be used.
-    */
+  /* Update: According to Specification Update july 2024 errata 7,
+   * GPRC and GORCL/H also counts missed packets. While GPRC is decided for
+   * future observing implementation. Solutions are;
+   * Reading MPC and subtracting or using QPRC.
+   * Note that GORCL/H is already not going to be used.
+   */
   (void)ixgbe_read_reg(hw, IXGBE_GPRC);
   (void)ixgbe_read_reg(hw, IXGBE_GPTC);
   (void)ixgbe_read_reg(hw, IXGBE_TPR);
@@ -91,9 +91,9 @@ dmaiok:;
    * Doesn't affect the functionality of correcting 1 bit flip,
    * while enabling it may stop Rx on 2-3 bit errors.
    */
-  u32 read_val = ixgbe_read_reg(hw,IXGBE_RXFECCERR0);
-  IXGBE_CLEAR_BITS(read_val,IXGBE_RXFECCERR0_ECCFLT_EN);
-  ixgbe_write_reg(hw,IXGBE_RXFECCERR0,read_val);
+  u32 read_val = ixgbe_read_reg(hw, IXGBE_RXFECCERR0);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_RXFECCERR0_ECCFLT_EN);
+  ixgbe_write_reg(hw, IXGBE_RXFECCERR0, read_val);
   /* Rx offloads needs to be decided before continuing. */
 
   return 0;
@@ -120,7 +120,7 @@ semaphore_main:
   delay = 10;
   for (u8 i = 0; i < 25; i++) {
     const u32 swsm = ixgbe_read_reg(hw, IXGBE_SWSM);
-    if (IXGBE_IS_CLEAR(swsm,IXGBE_SWSM_SMBI)) goto semaphore_free;
+    if (IXGBE_IS_CLEAR(swsm, IXGBE_SWSM_SMBI)) goto semaphore_free;
     usleep(delay);
     if (likely(delay < 1000)) delay *= 2;
   }
