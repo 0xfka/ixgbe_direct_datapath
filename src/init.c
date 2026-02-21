@@ -8,13 +8,32 @@
  * Initialize ASIC following 82599 datasheet page 166.
  */
 int ixgbe_probe(const struct hw* hw) {
+  u32 count_crit = 0;
+  u32 max_retr_crit = 3;
   u32 delay = 10;
   /* Disable Interrupts */
   ixgbe_write_reg(hw, IXGBE_EIMC, 0x7FFFFFFF);
   u32 err = ixgbe_read_reg(hw, IXGBE_EIMS);
   if (unlikely(err != 0)) return -EIO;
+  master_disable:;
+  u32 ctrl = ixgbe_read_reg(hw,IXGBE_CTRL);
+  IXGBE_SET_BITS(ctrl,IXGBE_CTRL_MASTER);
+  ixgbe_write_reg(hw,IXGBE_CTRL,ctrl);
+  /* Datasheet doesn't specifies a timeout for master disable. */
+  delay = 10;
+  for (u16 i = 0; i < 788; i++) {
+  ctrl = ixgbe_read_reg(hw,IXGBE_STATUS);
+  if (likely(IXGBE_IS_CLEAR(ctrl, IXGBE_STATUS_MASTER))) goto global_reset;
+      usleep(delay);
+    if (likely(delay < 1000)) delay *= 2;
+  }
+  if (unlikely(count_crit == max_retr_crit)) return -EDEADLK;
+  count_crit++;
+  master_disable_workaround(hw);
+  goto master_disable;
+  global_reset:;
   /* Global Reset */
-  u32 ctrl = ixgbe_read_reg(hw, IXGBE_CTRL);
+  ctrl = ixgbe_read_reg(hw, IXGBE_CTRL);
   IXGBE_SET_BITS(ctrl, IXGBE_CTRL_RST | IXGBE_CTRL_LRST);
   ixgbe_write_reg(hw, IXGBE_CTRL, ctrl);
   /* ~10.23 ms at total. +~10ms means malfunctional behavior. */
@@ -207,4 +226,33 @@ int semaphore_release(const struct hw* hw, const ixgbe_swfw_sync_t acquire) {
   IXGBE_WRITE_FLUSH(hw);
   usleep(10000);
   return 0;
+}
+  /* According to errata 9, rev 4.3.3, 
+   * there are cases where PCIe Master Enable bit
+   * is not released. This function issues a Master Disable
+   * and the recommendations specified.
+  */
+void master_disable_workaround(const struct hw* hw){
+  /* Flush data path first */
+  u32 hlreg0 = ixgbe_read_reg(hw,IXGBE_HLREG0);
+  IXGBE_SET_BITS(hlreg0,IXGBE_HLREG0_LPBK);
+  ixgbe_write_reg(hw,IXGBE_HLREG0,hlreg0);
+  u32 rxctrl = ixgbe_read_reg(hw, IXGBE_RXCTRL);
+  IXGBE_CLEAR_BITS(rxctrl, IXGBE_RXCTRL_RXEN);
+  ixgbe_write_reg(hw,IXGBE_RXCTRL,rxctrl);
+  u32 gcr_ext = ixgbe_read_reg(hw,IXGBE_GCR_EXT);
+  IXGBE_SET_BITS(gcr_ext, IXGBE_GCR_EXT_BUFFERS_CLEAR_FUNC);
+  ixgbe_write_reg(hw,IXGBE_GCR_EXT,gcr_ext);
+  usleep(20);
+  IXGBE_CLEAR_BITS(hlreg0, IXGBE_HLREG0_LPBK);
+  IXGBE_CLEAR_BITS(gcr_ext, IXGBE_GCR_EXT_BUFFERS_CLEAR_FUNC);
+  ixgbe_write_reg(hw, IXGBE_GCR_EXT, gcr_ext);
+  ixgbe_write_reg(hw,IXGBE_HLREG0,hlreg0);
+  u32 ctrl = ixgbe_read_reg(hw, IXGBE_CTRL);
+  IXGBE_SET_BITS(ctrl,IXGBE_CTRL_RST);
+  ixgbe_write_reg(hw, IXGBE_CTRL, ctrl);
+  /* Larger than 1 microsecond is recommended */
+  usleep(10);
+  /* Two consecutive software resets are recommended */
+  ixgbe_write_reg(hw, IXGBE_CTRL, ctrl);
 }

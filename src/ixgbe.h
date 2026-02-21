@@ -315,5 +315,6 @@ static inline void ixgbe_write_reg(const struct hw* hw, const u32 reg,
 int ixgbe_probe(const struct hw* hw);
 int semaphore_acquire(const struct hw* hw,ixgbe_swfw_sync_t);
 int semaphore_release(const struct hw* hw,ixgbe_swfw_sync_t);
+void master_disable_workaround(const struct hw* hw);
 
 #endif
