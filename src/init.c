@@ -159,6 +159,10 @@ dmaiok:;
   /* IPv6 disable and IP Fragment Split Disable
    *  will not set of 'for internal usage' warning. */
   ixgbe_write_reg(hw,IXGBE_RFCTL,read_val);
+  /* Match PF pool with mac addr */
+  read_val = ixgbe_read_reg(hw, IXGBE_MPSAR);
+  IXGBE_SET_BITS(read_val, (1 << 0));
+  ixgbe_write_reg(hw, IXGBE_MPSAR, read_val);
   return 0;
 }
 /*
