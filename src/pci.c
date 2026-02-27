@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -67,6 +68,21 @@ int unbind(const char* pci, const char* target_drv) {
     close(fd);
     return -(save_errno ? save_errno : EIO);
   }
+  close(fd);
+  /* Enable DMA */
+  len = snprintf(path, sizeof(path),"/sys/bus/pci/devices/%s/config",pci);
+  if (unlikely(len < 0)) return -EINVAL;
+  if (unlikely((size_t)len >= sizeof(path))) return -ENAMETOOLONG;
+  fd = open(path, O_RDWR);
+  if (unlikely(fd < 0)) {
+    return -(errno ? errno : EIO);
+  }
+  assert(lseek(fd, 4, SEEK_SET) == 4);
+  u16 read_val = 0;
+  assert(read(fd, &read_val, 2) == 2);
+  read_val |= 1 << 2;
+  assert(lseek(fd, 4, SEEK_SET) == 4);
+  assert(write(fd, &read_val, 2) == 2);
   close(fd);
   return 0;
 }
