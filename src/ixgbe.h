@@ -316,7 +316,7 @@ extern union ixgbe_adv_rx_desc desc;
 /* Good Packets Transmitted Count Register */
 #define IXGBE_GPTC 0x04080
 /* Total Packets Received Register */
-#define IXGBE_TPR 0x040D00
+#define IXGBE_TPR 0x040D0
 /* Total Packets Transmitted Register */
 #define IXGBE_TPT 0x040D4
 /* Rx Missed Packet Count*/
