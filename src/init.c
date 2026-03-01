@@ -117,10 +117,10 @@ dmaiok:;
   /* Filter Control Registers */
   /* Broadcast was cleared since the ARP will be hardcoded. */
   read_val = ixgbe_read_reg(hw, IXGBE_FCTRL);
-  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_BAM);
+  IXGBE_SET_BITS(read_val, IXGBE_FCTRL_BAM);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_MPE);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_SBP);
-  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_UPE);
+  IXGBE_SET_BITS(read_val, IXGBE_FCTRL_UPE);
   ixgbe_write_reg(hw,IXGBE_FCTRL,read_val);
   /* Out of scope, disabled. */
   read_val = ixgbe_read_reg(hw, IXGBE_VLNCTRL);
@@ -168,8 +168,10 @@ dmaiok:;
   IXGBE_CLEAR_BITS(read_val, IXGBE_SRRCTL_BSIZEPACKET);
   IXGBE_SET_BITS(read_val, 1 << 1);
   IXGBE_CLEAR_BITS(read_val, IXGBE_SRRCTL_DESCTYPE);
-  IXGBE_SET_BITS(read_val, 1 << 27);
+  IXGBE_SET_BITS(read_val, 1 << 25);
   ixgbe_write_reg(hw, IXGBE_SRRCTL, read_val);
+  err = rx_ring_probe(hw);
+  if (unlikely(err != 0)) return err;
   return 0;
 }
 /*
@@ -199,7 +201,7 @@ semaphore_main:
     if (likely(delay < 1000)) delay *= 2;
   }
   sw_malfunction = true;
-semaphore_free:
+semaphore_free:;
   u32 semaphore = ixgbe_read_reg(hw, IXGBE_SWSM);
   IXGBE_SET_BITS(semaphore, IXGBE_SWSM_SWESMBI);
   ixgbe_write_reg(hw, IXGBE_SWSM, semaphore);
