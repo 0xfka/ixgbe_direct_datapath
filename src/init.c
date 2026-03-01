@@ -236,7 +236,7 @@ read_sw_fw_sync:
   }
   const u32 mask = acquire | IXGBE_SWFW_TO_FW_MASK(acquire);
   read_val = ixgbe_read_reg(hw, IXGBE_SW_FW_SYNC);
-  if (unlikely(IXGBE_IS_CLEAR(read_val, mask))) goto accesible;
+  if (likely(IXGBE_IS_CLEAR(read_val, mask))) goto accesible;
   usleep(10000);
   goto retr;
 accesible:
