@@ -67,7 +67,7 @@ int main(const int argc, char** argv) {
          for (i = 0; i < rx_ring[0].wb.length; i++){
        printf("%02x ", pkt[i]);
          }
-               if(unlikely(i == rx_ring[0].wb.length)){
+               if(rx_ring[0].wb.status_error & IXGBE_RXD_STAT_EOP){
         printf("EOP");
         return 0;
       }
