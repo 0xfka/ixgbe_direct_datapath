@@ -274,9 +274,6 @@ extern union ixgbe_adv_rx_desc desc;
 /* EType Queue Select */
 #define IXGBE_ETQS 0x0EC00
 
-/* Packet Split Receive Type Register */
-#define IXGBE_PSRTYPE 0x0EA00
-
 /* Receive RSC Control */
 #define IXGBE_RSCCTL 0x0102C
 
