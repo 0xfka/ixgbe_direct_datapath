@@ -77,12 +77,28 @@ int unbind(const char* pci, const char* target_drv) {
   if (unlikely(fd < 0)) {
     return -(errno ? errno : EIO);
   }
-  assert(lseek(fd, 4, SEEK_SET) == 4);
+  if (lseek(fd, 4, SEEK_SET) != 4){
+    save_errno = errno;
+    close(fd);
+    return -(save_errno ? save_errno : EIO);
+  }
   u16 read_val = 0;
-  assert(read(fd, &read_val, 2) == 2);
+  if (read(fd, &read_val, 2) != 2){
+    save_errno = errno;
+    close(fd);
+    return -(save_errno ? save_errno : EIO);
+  }
   read_val |= 1 << 2;
-  assert(lseek(fd, 4, SEEK_SET) == 4);
-  assert(write(fd, &read_val, 2) == 2);
+  if (lseek(fd, 4, SEEK_SET) != 4){
+    save_errno = errno;
+    close(fd);
+    return -(save_errno ? save_errno : EIO);
+  }
+  if (write(fd, &read_val, 2) != 2){
+    save_errno = errno;
+    close(fd);
+    return -(save_errno ? save_errno : EIO);
+  }
   close(fd);
   return 0;
 }
