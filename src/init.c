@@ -117,10 +117,10 @@ dmaiok:;
   /* Filter Control Registers */
   /* Broadcast was cleared since the ARP will be hardcoded. */
   read_val = ixgbe_read_reg(hw, IXGBE_FCTRL);
-  IXGBE_SET_BITS(read_val, IXGBE_FCTRL_BAM);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_BAM);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_MPE);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_SBP);
-  IXGBE_SET_BITS(read_val, IXGBE_FCTRL_UPE);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_UPE);
   ixgbe_write_reg(hw,IXGBE_FCTRL,read_val);
   /* Out of scope, disabled. */
   read_val = ixgbe_read_reg(hw, IXGBE_VLNCTRL);
