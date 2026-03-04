@@ -57,7 +57,7 @@ int main(const int argc, char** argv) {
   u32 batch_manage_tail = 128;
   u32 batch_manage_tail_counter = 0;
   u32 total_packets = 0;
-  u32 print_counter = 0;
+  u32 irrelevant_packets = 0;
 
   u32 i = ixgbe_read_reg(&ixgbe_adapter, IXGBE_RDH);
   while(1){
@@ -66,17 +66,25 @@ int main(const int argc, char** argv) {
       rmb();
       batch_manage_tail_counter++;
       total_packets++;
-      /* Disabled for testing ring buffer behaviour */
       /* This PoC only includes ICMP. */
-      /* if(unlikely(rx_ring[i].wb.pkt_info != 0)){
+      if(unlikely(rx_ring[i].wb.pkt_info != 0)){
+        irrelevant_packets++;
         break;
-      } */
+      } 
+      /* Packet parsing logic is added temporarily to prove pointer arithmatics on structures.
+      * Since the driver cannot reply ARP's, static ARP configuration needed.
+      */
       u8* pkt = (u8*)ixgbe_adapter.rx_base + (256 * 1024) + ( i * 2048);
-      if(unlikely(total_packets == 256)){
-        printf("256 packet, %x\n", print_counter);
-        print_counter++;
-        total_packets = 0;
-      }
+      struct eth_hdr *eth = (struct eth_hdr *)pkt;
+      u8* src_mac = eth->src_mac;
+      printf("source mac address: %0x:%0x:%0x:%0x:%0x:%0x\n", src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
+      u8* dst_mac = eth->dst_mac;
+      printf("destination mac address: %0x:%0x:%0x:%0x:%0x:%0x\n", dst_mac[0], dst_mac[1], dst_mac[2], dst_mac[3], dst_mac[4], dst_mac[5]);
+      struct ip_hdr *ip = (struct ip_hdr *)(pkt + sizeof(struct eth_hdr));
+      u32 src_ip = __builtin_bswap32(ip->src_addr); /* See little endian/big endian byte orders.*/
+      printf("source ip addrress: %0x\n", src_ip);
+      u32 dst_ip = __builtin_bswap32(ip->dst_addr);
+      printf("destination ip address: %0x\n",dst_ip);
       if(unlikely(batch_manage_tail_counter == batch_manage_tail)){
         ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, i);
         batch_manage_tail_counter = 0;
