@@ -29,7 +29,11 @@ int main(const int argc, char** argv) {
   if (unlikely(err != 0)) {
     return -err;
   }
-  err = virt2phy(&ixgbe_adapter);
+  err = virt2phy((u64)ixgbe_adapter.rx_base,&ixgbe_adapter.rx_base_phy);
+  if (unlikely(err != 0)) {
+    return -err;
+  }
+  err = virt2phy((u64)ixgbe_adapter.tx_base,&ixgbe_adapter.tx_base_phy);
   if (unlikely(err != 0)) {
     return -err;
   }

@@ -30,12 +30,11 @@ int alloc_hugepage(struct hw* hw) {
  * Since Linux returns virtual mem addr in alloc_hugepage function,
  * it needs to be converted to physical addr to use on NIC.
  */
-int virt2phy(struct hw* hw) {
+int virt2phy(u64 enter_value, u64* return_value) {
   int save_errno;
-  const u64 v_addr = (u64)hw->rx_base;
   const long pagesize = sysconf(_SC_PAGESIZE);
   if (unlikely(pagesize <= 0)) return -errno;
-  const u64 index = v_addr / (u64)pagesize;
+  const u64 index = enter_value / (u64)pagesize;
 
   const int fd = open("/proc/self/pagemap", O_RDONLY);
   u64 result;
@@ -61,8 +60,8 @@ int virt2phy(struct hw* hw) {
     return -EFAULT;
   }
   u64 paddr = (result & ((1ULL << 55) - 1)) * (u64)pagesize;
-  paddr += v_addr % (u64)pagesize;
-  hw->rx_base_phy = paddr;
+  paddr += enter_value % (u64)pagesize;
+  *return_value = paddr;
   return 0;
 }
 /*

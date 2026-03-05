@@ -10,12 +10,15 @@ struct hw {
   u32 rx_head;
   u32 rx_tail;
   void* tx_base;
+  u64 tx_base_phy;
+  u32 tx_head;
+  u32 tx_tail;
   volatile u32* rdt_reg_addr;
   volatile u32* rdh_reg_addr;
 };
 extern struct hw ixgbe_adapter;
 
 int alloc_hugepage(struct hw* hw);
-int virt2phy(struct hw* hw);
+int virt2phy(u64 enter_value, u64* return_value);
 int mmap_bar0(struct hw* hw);
 #endif
