@@ -172,6 +172,8 @@ dmaiok:;
   ixgbe_write_reg(hw, IXGBE_SRRCTL, read_val);
   err = rx_ring_probe(hw);
   if (unlikely(err != 0)) return err;
+  err = tx_ring_probe(hw);
+  if (unlikely(err != 0)) return err;
   return 0;
 }
 /*

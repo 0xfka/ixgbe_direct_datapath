@@ -9,6 +9,7 @@
 #include "pci.h"
 struct hw ixgbe_adapter __attribute__((aligned(64))) = {0};
 union ixgbe_adv_rx_desc ixgbe_adv_rx_desc __attribute__((aligned(64))) = {0};
+union ixgbe_adv_tx_desc ixgbe_adv_tx_desc __attribute__((aligned(64))) = {0};
 
 int main(const int argc, char** argv) {
   if (unlikely(argc < 2)) {
@@ -50,6 +51,7 @@ int main(const int argc, char** argv) {
     return -err;
   }
   union ixgbe_adv_rx_desc *rx_ring = (union ixgbe_adv_rx_desc *)ixgbe_adapter.rx_base;
+  union ixgbe_adv_tx_desc *tx_ring = (union ixgbe_adv_tx_desc *)ixgbe_adapter.tx_base;
   ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, BUFFER_NUMBER -1);
   ixgbe_read_reg(&ixgbe_adapter, IXGBE_GPRC);
   ixgbe_read_reg(&ixgbe_adapter, IXGBE_RXMPC);

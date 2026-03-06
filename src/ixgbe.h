@@ -26,6 +26,7 @@ struct ip_hdr {
 #define NUM_DESC     512
 #define DESC_SIZE    32
 #define RDLEN_VAL    0x4000
+#define TDLEN_VAL    0x16384
    #define IXGBE_BUFFER_ADVANCE(current_val, add_val) \
        (((current_val) + (add_val)) & (BUFFER_NUMBER - 1))
 union ixgbe_adv_rx_desc {
@@ -44,7 +45,62 @@ struct {
   u32 pkt_info;     
     } wb; 
 };
-extern union ixgbe_adv_rx_desc desc;
+extern union ixgbe_adv_rx_desc rx_desc;
+union ixgbe_adv_tx_desc {
+struct {
+  u32 iplen           :9;
+  u32 maclen          :7;
+  u32 vlan            :16;
+  u32 ipsec_sa_index  :10;
+  u32 fcoef           :6;
+  u32 padding         :16;
+  u32 ipsec_esp_len   :9;
+  u32 tucmd           :11; 
+  u32 dtyp            :4;       
+  u32 reserved        :1;         
+  u32 dext            :1;
+  u32 bcntlen         :6;
+  u32 idx             :3;
+  u32 reserved2       :1;
+  u32 l4len           :8;
+  u32 mss             :16;     
+  u32 padding2        :4;
+  } context;
+  struct {   
+  u64 address     :64;
+  u32 dtalen      :16;
+  u32 reserved    :2;
+  u32 mac         :2;
+  u32 dtyp        :4;
+  /* DCMD */
+  u32 eop         :1;
+  u32 ifcs        :1;
+  u32 reserved2   :1;
+  u32 rs          :1;
+  u32 reserved3   :1;
+  u32 dext        :1;
+  u32 vle         :1;
+  u32 tse         :1;
+  /* TSA*/
+  u32 dd          :1;
+  u32 reserved4   :3;
+  u32 idx         :3;
+  u32 cc          :1;
+  /* POPTS*/
+  u32 ixsm        :1;
+  u32 txsm        :1;
+  u32 ipsec       :1;
+  u32 reserved5   :3;
+  u32 paylen      :18;
+    } data_read; 
+  struct {
+  u64 reserved    :64;
+  u32 reserved2   :32;
+  u32 sta         :4;
+  u32 reserved3   :28;
+  } data_wb;
+};
+extern union ixgbe_adv_tx_desc tx_desc;
 
 #define IXGBE_SET_BITS(val, bits) ((val) |= (bits))
 #define IXGBE_CLEAR_BITS(val, bits) ((val) &= ~(bits))
@@ -174,6 +230,7 @@ extern union ixgbe_adv_rx_desc desc;
 
 /* DMA Tx Control */
 #define IXGBE_DMATXCTL 0x04A80
+#define IXGBE_DMATXCTL_TE (1 << 1)
 
 /* Receive Checksum Control */
 #define IXGBE_RXCSUM 0x05000
@@ -239,20 +296,35 @@ extern union ixgbe_adv_rx_desc desc;
 #define IXGBE_RDBAL 0x01000
 /* Receive Descriptor Base Address High */
 #define IXGBE_RDBAH 0x01004
-
 /* Receive Descriptor Length */
 #define IXGBE_RDLEN 0x01008
+/* Transmit Descriptor Base Address Low*/
+#define IXGBE_TDBAL 0x06000
+/* Transmit Descriptor Base Address High */
+#define IXGBE_TDBAH 0x06004
+/* Transmit Descriptor Length*/
+#define IXGBE_TDLEN 0x06008
 
 /* Receive Descriptor Head */
 #define IXGBE_RDH 0x01010
 
 /* Receive Descriptor Tail */
 #define IXGBE_RDT 0x01018
+/* Transmit Descriptor Head*/
+#define IXGBE_TDH 0x06010
+/* Transmit Descriptor Tail */
+#define IXGBE_TDT 0x06018
 
 /* Receive Descriptor Control */
 #define IXGBE_RXDCTL 0x01028
 #define IXGBE_RXDCTL_RX_EN  (1 << 25)
 #define IXGBE_RXDCTL_VME    (1 << 30)
+/* Transmit Descriptor Control */
+#define IXGBE_TXDCTL 0x06028
+#define IXGBE_TXDCTL_PTHRESH 0x0000003F /* Bits 6:0 */
+#define IXGBE_TXDCTL_HTHRESH 0x00007F00 /* Bits 14:8 */
+#define IXGBE_TXDCTL_WTHRESH 0x007F0000 /* Bits 22:16 */
+#define IXGBE_TXDCTL_TX_EN  (1 << 25)
 
 /* Split Receive Control Registers */
 #define IXGBE_SRRCTL 0x01014
@@ -350,6 +422,17 @@ extern union ixgbe_adv_rx_desc desc;
 #define IXGBE_GCR_EXT 0x11050
 #define IXGBE_GCR_EXT_BUFFERS_CLEAR_FUNC (1 << 30)
 
+/* DCB Transmit Descriptor Plane Control and Status 
+ * For summary, "Data Center Bridging (DCB) is a collection of standards-based extensions to classical Ethernet.
+ * It provides a lossless data center transport layer." 
+ * - https://edc.intel.com/content/www/us/en/design/products/ethernet/adapters-and-devices-user-guide/data-center-bridging-dcb/
+ */
+#define IXGBE_RTTDCS 0x04900
+#define IXGBE_RTTDCS_ARBDIS (1 << 6)
+
+/* DMA Tx TCP Max Allow Size Requests */
+#define IXGBE_DTXMXSZRQ 0x08100
+#define IXGBE_DTXMXSZRQ_MAX_REQ 0x00000FFE /* Max_bytes_num_req. Bits 11:0 */
 typedef enum {
     SW_EEP_SM     = (1 << 0),
     SW_PHY_SM0    = (1 << 1),
@@ -379,5 +462,6 @@ int semaphore_acquire(const struct hw* hw,ixgbe_swfw_sync_t);
 int semaphore_release(const struct hw* hw,ixgbe_swfw_sync_t);
 void master_disable_workaround(const struct hw* hw);
 int rx_ring_probe(const struct hw* hw);
+int tx_ring_probe(const struct hw* hw);
 
 #endif
