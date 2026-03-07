@@ -77,7 +77,10 @@ int main(const int argc, char** argv) {
   u32 total_packets = 0;
   u32 irrelevant_packets = 0;
   u32 batch_tx_counter = 0;
-  u32 batch_tx_transmit = 7;
+  /* Basic benchmarks show that batching Tx is increasing latency too much.
+  * Benchmarks will be added before merging this branch to main.
+  */
+  u32 batch_tx_transmit = 0;
   u32 i = ixgbe_read_reg(&ixgbe_adapter, IXGBE_RDH);
   while(1){
     barrier();
