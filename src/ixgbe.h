@@ -24,8 +24,8 @@ struct ip_hdr {
 #define IXGBE_RXD_STAT_DD    0x01  /* Descriptor Done */
 #define IXGBE_RXD_STAT_EOP   0x02  /* End of Packet */
 #define NUM_DESC     512
-#define DESC_SIZE    32
-#define RDLEN_VAL    0x4000
+#define DESC_SIZE    16
+#define RDLEN_VAL    8192
 #define TDLEN_VAL    8192
    #define IXGBE_BUFFER_ADVANCE(current_val, add_val) \
        (((current_val) + (add_val)) & (BUFFER_NUMBER - 1))
@@ -33,17 +33,18 @@ union ixgbe_adv_rx_desc {
 struct {
   u64 pkt_addr; /* Packet buffer address */
   u64 hdr_addr; /* Header buffer address */
-  u64 padding;
-  u64 padding2;
   } read;
-  struct {
-  u64 padding;
+struct {
+  u32 rsstype   :4;
+  u32 pkttype   :13;
+  u32 rsccnt    :4;
+  u32 hdr_len   :10;
+  u32 sph       :1;
+  u32 rss_hash;
   volatile u32 status_error; 
   u16 length;       
-  u16 vlan;         
-  u32 rss;          
-  u32 pkt_info;     
-    } wb; 
+  u16 vlan;
+  } wb;
 };
 extern union ixgbe_adv_rx_desc rx_desc;
 union ixgbe_adv_tx_desc {

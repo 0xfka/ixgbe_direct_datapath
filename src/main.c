@@ -13,6 +13,15 @@ union ixgbe_adv_rx_desc ixgbe_adv_rx_desc __attribute__((aligned(64))) = {0};
 union ixgbe_adv_tx_desc ixgbe_adv_tx_desc __attribute__((aligned(64))) = {0};
 
 int main(const int argc, char** argv) {
+  /* Check data structures is valid or not before touching to device */
+  if (unlikely(sizeof(ixgbe_adv_rx_desc) != 16)){
+    printf("rx descriptor is not aligned. size is : %lu\n", sizeof(ixgbe_adv_rx_desc));
+    return -EINVAL;
+  }
+  if (unlikely(sizeof(ixgbe_adv_tx_desc) != 16)){
+    printf("tx descriptor is not aligned. size is : %lu\n", sizeof(ixgbe_adv_tx_desc));
+    return -EINVAL;
+  }
   if (unlikely(argc < 2)) {
     write(STDERR_FILENO,
           "usage: ./binary <pci_addr>. use lspci for PCI addr.\n", 52);
