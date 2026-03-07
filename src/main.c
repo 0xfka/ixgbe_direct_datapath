@@ -89,9 +89,11 @@ int main(const int argc, char** argv) {
       batch_manage_tail_counter++;
       total_packets++;
       /* This PoC only includes ICMP. */
-      if(unlikely(rx_ring[i].wb.pkt_info != 0)){
+      if(unlikely(rx_ring[i].wb.pkttype != 0x01)){
+        rx_ring[i].wb.status_error = 0;
+        i = IXGBE_BUFFER_ADVANCE(i, 1);
         irrelevant_packets++;
-        break;
+        continue;
       } 
       /* Packet parsing logic is added temporarily to prove pointer arithmatics on structures.
       * Since the driver cannot reply ARP's, static ARP configuration needed.
