@@ -120,7 +120,8 @@ int main(const int argc, char** argv) {
       printf("source ip addrress: %0x\n", src_ip);
       u32 dst_ip = __builtin_bswap32(ip->dst_addr);
       printf("destination ip address: %0x\n",dst_ip);
-      if(unlikely(batch_manage_tail_counter == batch_manage_tail)){
+      */
+      if(unlikely(batch_manage_tail_counter >= batch_manage_tail)){
         ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, i);
         batch_manage_tail_counter = 0;
       }
@@ -151,8 +152,8 @@ int main(const int argc, char** argv) {
       u64 transmit = ixgbe_adapter.rx_base_phy + (256 * 1024) + ( i * 2048);
       union ixgbe_adv_tx_desc *tx_desc = &tx_ring[i];
       tx_desc->data_read.address = transmit;
-      tx_desc->data_read.dtalen = 84;
-      tx_desc->data_read.paylen = 84;
+      tx_desc->data_read.dtalen = rx_ring[i].wb.length;
+      tx_desc->data_read.paylen = rx_ring[i].wb.length;
       tx_desc->data_read.dtyp = 3;
       tx_desc->data_read.rs = 1;
       tx_desc->data_read.eop = 1;
