@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <xmmintrin.h>
 
 #include "../selftests/selftests.h"
 #include "base.h"
@@ -106,6 +108,30 @@ int main(const int argc, char** argv) {
         ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, i);
         batch_manage_tail_counter = 0;
       }
+      /* PoC datapath 
+      */
+      /* Swap MAC's */
+      for (int j = 0; j < 6; j++) {
+      u8 tmp = eth->src_mac[j];
+      eth->src_mac[j] = eth->dst_mac[j];
+      eth->dst_mac[j] = tmp;
+      }
+      /* Swap IP's */
+      u32 *src_ip_ptr = (u32*)(pkt + 26);
+      u32 *dst_ip_ptr = (u32*)(pkt + 30);
+      u32 tmp_ip = *src_ip_ptr;
+      *src_ip_ptr = *dst_ip_ptr;
+      *dst_ip_ptr = tmp_ip;
+      /* Change type to reply on ICMP */
+      struct icmphdr *icmp = (struct icmphdr *)(pkt + sizeof(struct eth_hdr) + sizeof(struct ip_hdr));
+      if(likely(pkt[34] == 8)){
+        pkt[34] = 0;
+      /* Calcucate new checksum withto RFC 1624 */
+      u32 chk_new = ntohs(icmp->checksum) + 0x0800;
+      if (unlikely(chk_new > 0xFFFF))
+        chk_new = (chk_new & 0xFFFF) +1;
+      icmp->checksum = htons(chk_new);
+      }
       u64 transmit = ixgbe_adapter.rx_base_phy + (256 * 1024) + ( i * 2048);
       union ixgbe_adv_tx_desc *tx_desc = &tx_ring[i];
       tx_desc->data_read.address = transmit;
@@ -120,7 +146,9 @@ int main(const int argc, char** argv) {
       wmb();
       /* Reset Descriptor Done */
       rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-      tx_ring[i].data_read.dd = 0;
+      rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024) + (i * 2048);
+      rx_ring[i].read.hdr_addr = 0;
+      wmb();
       i = IXGBE_BUFFER_ADVANCE(i, 1);
       if(unlikely(batch_tx_counter >= batch_tx_transmit)){
       ixgbe_write_reg(&ixgbe_adapter, IXGBE_TDT, i);

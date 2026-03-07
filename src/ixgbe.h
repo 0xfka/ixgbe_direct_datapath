@@ -17,6 +17,12 @@ struct ip_hdr {
   u32 src_addr;
   u32 dst_addr;
 } __attribute__((packed));
+struct icmphdr {
+  u8 type;
+  u8 code;
+  u16 checksum;
+  u32 content;
+} __attribute__((packed));
 
 #define BUFFER_SIZE 2048 
 #define BUFFER_NUMBER 512 /* Must give -1 to NIC for head==tail*/
