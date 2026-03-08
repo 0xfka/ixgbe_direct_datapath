@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdio.h>
 
 #include "../src/hw.h"
 #include "../src/ixgbe.h"
@@ -34,5 +35,23 @@ int ixgbe_test_mmio(const struct hw* hw) {
   ixgbe_write_reg(hw, IXGBE_LEDCTL, origin_state);
   read_val = ixgbe_read_reg(hw, IXGBE_LEDCTL);
   if (unlikely((read_val != origin_state))) return -EIO;
+  return 0;
+}
+/* Checks data structure definations.
+* Even shifting for 1 bit can cause undefined behavior.
+* This function is not included on ixgbe_run_diagnostic to
+* call before the PCI unbinding logic on main. 
+*/ 
+int ixgbe_test_ds(){
+  union ixgbe_adv_rx_desc ixgbe_adv_rx_desc;
+  union ixgbe_adv_tx_desc ixgbe_adv_tx_desc;
+    if (unlikely(sizeof(ixgbe_adv_rx_desc) != 16)){
+    printf("rx descriptor is not aligned. size is : %lu\n", sizeof(ixgbe_adv_rx_desc));
+    return -EINVAL;
+  }
+  if (unlikely(sizeof(ixgbe_adv_tx_desc) != 16)){
+    printf("tx descriptor is not aligned. size is : %lu\n", sizeof(ixgbe_adv_tx_desc));
+    return -EINVAL;
+  }
   return 0;
 }

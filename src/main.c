@@ -15,14 +15,10 @@ union ixgbe_adv_rx_desc ixgbe_adv_rx_desc __attribute__((aligned(64))) = {0};
 union ixgbe_adv_tx_desc ixgbe_adv_tx_desc __attribute__((aligned(64))) = {0};
 
 int main(const int argc, char** argv) {
-  /* Check data structures is valid or not before touching to device */
-  if (unlikely(sizeof(ixgbe_adv_rx_desc) != 16)){
-    printf("rx descriptor is not aligned. size is : %lu\n", sizeof(ixgbe_adv_rx_desc));
-    return -EINVAL;
-  }
-  if (unlikely(sizeof(ixgbe_adv_tx_desc) != 16)){
-    printf("tx descriptor is not aligned. size is : %lu\n", sizeof(ixgbe_adv_tx_desc));
-    return -EINVAL;
+  int err;
+  err = ixgbe_test_ds();
+  if (unlikely(err != 0)) {
+    return -err;
   }
   if (unlikely(argc < 2)) {
     write(STDERR_FILENO,
@@ -34,7 +30,7 @@ int main(const int argc, char** argv) {
   }
   ixgbe_adapter.pci_addr = argv[1];
   // Driver should be changed for another PCI direct access modes.
-  int err = unbind(ixgbe_adapter.pci_addr, "uio_pci_generic");
+  err = unbind(ixgbe_adapter.pci_addr, "uio_pci_generic");
   if (unlikely(err != 0)) {
     return -err;
   }
