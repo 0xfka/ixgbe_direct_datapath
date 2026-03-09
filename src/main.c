@@ -117,6 +117,23 @@ int main(const int argc, char** argv) {
       }
       /* PoC datapath 
       */
+      /* ipv6 may be added but not included for now */
+      if(unlikely(ip->version != 4)){
+        rx_ring[i].wb.status_error = 0;
+        i = IXGBE_BUFFER_ADVANCE(i, 1);
+        irrelevant_packets++;
+        continue;
+      }
+      if(unlikely((ip->protocol != 1))){
+        rx_ring[i].wb.status_error = 0;
+        i = IXGBE_BUFFER_ADVANCE(i, 1);
+        irrelevant_packets++;
+        continue;
+      }
+      DPRINT("irrelevant packets : %u\n", irrelevant_packets);
+      /* After the checks, there's no branch before transmitting. */
+      total_bytes_tx = total_bytes_tx + ip->tot_len;
+      DPRINT("total bytes on Tx %u\n", total_bytes_tx);
       /* Swap MAC's */
       for (int j = 0; j < 6; j++) {
       u8 tmp = eth->h_source[j];
