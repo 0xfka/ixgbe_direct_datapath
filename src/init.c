@@ -46,7 +46,6 @@ int ixgbe_probe(const struct hw* hw) {
   }
   if (unlikely(IXGBE_IS_SET(err, (IXGBE_CTRL_RST | IXGBE_CTRL_LRST))))
     return -ETIMEDOUT;
-  clock_switching_workaround(hw);
   /* Reset delay value since it'll continue from Global Reset. */
   delay = 10;
   for (u8 i = 0; i < 23; i++) {
@@ -118,10 +117,10 @@ dmaiok:;
   /* Filter Control Registers */
   /* Broadcast was cleared since the ARP will be hardcoded. */
   read_val = ixgbe_read_reg(hw, IXGBE_FCTRL);
-  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_BAM);
+  IXGBE_SET_BITS(read_val, IXGBE_FCTRL_BAM);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_MPE);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_SBP);
-  IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_UPE);
+  IXGBE_SET_BITS(read_val, IXGBE_FCTRL_UPE);
   ixgbe_write_reg(hw,IXGBE_FCTRL,read_val);
   /* Out of scope, disabled. */
   read_val = ixgbe_read_reg(hw, IXGBE_VLNCTRL);
@@ -172,8 +171,6 @@ dmaiok:;
   IXGBE_SET_BITS(read_val, 1 << 25);
   ixgbe_write_reg(hw, IXGBE_SRRCTL, read_val);
   err = rx_ring_probe(hw);
-  if (unlikely(err != 0)) return err;
-  err = tx_ring_probe(hw);
   if (unlikely(err != 0)) return err;
   return 0;
 }
