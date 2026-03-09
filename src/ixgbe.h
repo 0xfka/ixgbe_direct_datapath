@@ -3,26 +3,6 @@
 
 #include "base.h"
 #include "hw.h"
-struct eth_hdr {
-    u8  dst_mac[6];
-    u8  src_mac[6];
-    u16 ethertype;
-} __attribute__((packed));
-struct ip_hdr {
-  u32 padding;
-  u32 padding2;
-  u8 padding3;
-  u8 protocol;
-  u16 hdr_checksum;
-  u32 src_addr;
-  u32 dst_addr;
-} __attribute__((packed));
-struct icmphdr {
-  u8 type;
-  u8 code;
-  u16 checksum;
-  u32 content;
-} __attribute__((packed));
 
 #define BUFFER_SIZE 2048 
 #define BUFFER_NUMBER 512 /* Must give -1 to NIC for head==tail*/

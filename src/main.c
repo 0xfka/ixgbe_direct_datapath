@@ -2,6 +2,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <xmmintrin.h>
+#include <netinet/ip.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip_icmp.h>
 
 #include "../selftests/selftests.h"
 #include "base.h"
@@ -72,6 +75,8 @@ int main(const int argc, char** argv) {
   u32 total_packets = 0;
   u32 irrelevant_packets = 0;
   u32 batch_tx_counter = 0;
+  u32 total_bytes_rx = 0;
+  u32 total_bytes_tx = 0;
   /* Basic benchmarks show that batching Tx is increasing latency too much.
   * Benchmarks will be added before merging this branch to main.
   */
@@ -83,32 +88,28 @@ int main(const int argc, char** argv) {
       rmb();
       batch_manage_tail_counter++;
       total_packets++;
-      /* This PoC only includes ICMP. */
-      if(unlikely(rx_ring[i].wb.pkttype != 0x01)){
-        rx_ring[i].wb.status_error = 0;
-        i = IXGBE_BUFFER_ADVANCE(i, 1);
-        irrelevant_packets++;
-        continue;
-      } 
       /* Packet parsing logic is added temporarily to prove pointer arithmatics on structures.
       * Since the driver cannot reply ARP's, static ARP configuration needed.
       */
       u8* pkt = (u8*)ixgbe_adapter.rx_base + (256 * 1024) + ( i * 2048);
-      struct eth_hdr *eth = (struct eth_hdr *)pkt;
+      struct ethhdr *eth = (struct ethhdr *)pkt;
       /* Definations below are useless when the debug flag is not set.
        * With compiler optimization is enabled, it can be optimized by the compiler,
        * but we also doesn't use it. A solution will be decided.
        * Probably make command will be splitted to development and release,
        * and optimizations will be used on release.
        */
-      u8* src_mac = eth->src_mac;
-      DPRINT("source mac address: %0x:%0x:%0x:%0x:%0x:%0x\n", src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
-      u8* dst_mac = eth->dst_mac;
-      DPRINT("destination mac address: %0x:%0x:%0x:%0x:%0x:%0x\n", dst_mac[0], dst_mac[1], dst_mac[2], dst_mac[3], dst_mac[4], dst_mac[5]);
-      struct ip_hdr *ip = (struct ip_hdr *)(pkt + sizeof(struct eth_hdr));
-      u32 src_ip = __builtin_bswap32(ip->src_addr); /* See little endian/big endian byte orders. */
+      u8* h_source = eth->h_source;
+      DPRINT("source mac address: %0x:%0x:%0x:%0x:%0x:%0x\n", h_source[0], h_source[1], h_source[2], h_source[3], h_source[4], h_source[5]);
+      u8* d_source = eth->h_dest;
+      DPRINT("destination mac address: %0x:%0x:%0x:%0x:%0x:%0x\n", d_source[0], d_source[1], d_source[2], d_source[3], d_source[4], d_source[5]);
+      struct iphdr *ip = (struct iphdr *)(pkt + sizeof(struct ethhdr));
+      total_bytes_rx = total_bytes_rx + ip->tot_len;
+      DPRINT("irrelevant packets : %u\n", irrelevant_packets);
+      DPRINT("total bytes on Rx %u\n", total_bytes_rx);
+      u32 src_ip = __builtin_bswap32(ip->saddr); /* See little endian/big endian byte orders. */
       DPRINT("source ip addrress: %0x\n", src_ip);
-      u32 dst_ip = __builtin_bswap32(ip->dst_addr);
+      u32 dst_ip = __builtin_bswap32(ip->daddr);
       DPRINT("destination ip address: %0x\n",dst_ip);
       if(unlikely(batch_manage_tail_counter >= batch_manage_tail)){
         ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, i);
@@ -118,9 +119,9 @@ int main(const int argc, char** argv) {
       */
       /* Swap MAC's */
       for (int j = 0; j < 6; j++) {
-      u8 tmp = eth->src_mac[j];
-      eth->src_mac[j] = eth->dst_mac[j];
-      eth->dst_mac[j] = tmp;
+      u8 tmp = eth->h_source[j];
+      eth->h_source[j] = eth->h_dest[j];
+      eth->h_dest[j] = tmp;
       }
       /* Swap IP's */
       u32 *src_ip_ptr = (u32*)(pkt + 26);
@@ -129,7 +130,7 @@ int main(const int argc, char** argv) {
       *src_ip_ptr = *dst_ip_ptr;
       *dst_ip_ptr = tmp_ip;
       /* Change type to reply on ICMP */
-      struct icmphdr *icmp = (struct icmphdr *)(pkt + sizeof(struct eth_hdr) + sizeof(struct ip_hdr));
+      struct icmphdr *icmp = (struct icmphdr *)(pkt + sizeof(struct ethhdr) + sizeof(struct iphdr));
       if(likely(pkt[34] == 8)){
         pkt[34] = 0;
       /* Calcucate new checksum withto RFC 1624 */
