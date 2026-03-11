@@ -32,7 +32,6 @@ struct {
   u16 vlan;
   } wb;
 };
-extern union ixgbe_adv_rx_desc rx_desc;
 union ixgbe_adv_tx_desc {
 struct {
   u32 iplen           :9;
@@ -87,8 +86,16 @@ struct {
   u32 reserved3   :28;
   } data_wb;
 };
-extern union ixgbe_adv_tx_desc tx_desc;
-
+struct ixgbe_stats {
+  u32 batch_manage_tail;
+  u32 batch_manage_tail_counter;
+  u32 total_packets;
+  u32 irrelevant_packets;
+  u32 batch_tx_counter;
+  u32 total_bytes_rx;
+  u32 total_bytes_tx;
+  u32 batch_tx_transmit;
+};
 #define IXGBE_SET_BITS(val, bits) ((val) |= (bits))
 #define IXGBE_CLEAR_BITS(val, bits) ((val) &= ~(bits))
 #define IXGBE_IS_SET(offset, mask)   (!!((offset) & (mask)))
