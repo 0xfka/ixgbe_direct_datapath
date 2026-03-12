@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <linux/if_ether.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -15,8 +16,6 @@
 #include "datapath.h"
 struct hw ixgbe_adapter __attribute__((aligned(64))) = {0};
 static struct ixgbe_stats stats = {0};
-static union ixgbe_adv_rx_desc ixgbe_adv_rx_desc __attribute__((aligned(64))) = {0};
-static union ixgbe_adv_tx_desc ixgbe_adv_tx_desc __attribute__((aligned(64))) = {0};
 
 int main(const int argc, char** argv) {
   int err;
@@ -91,23 +90,37 @@ int main(const int argc, char** argv) {
       */
       u8* pkt = (u8*)ixgbe_adapter.rx_base + (256 * 1024) + ( i * 2048);
       struct ethhdr *eth = (struct ethhdr *)pkt;
-      u8* h_source = eth->h_source;
-      u8* d_source = eth->h_dest;
       struct iphdr *ip = (struct iphdr *)(pkt + sizeof(struct ethhdr));
       stats.total_bytes_rx = stats.total_bytes_rx + ip->tot_len;
-      u32 src_ip = __builtin_bswap32(ip->saddr); /* See little endian/big endian byte orders. */
-      u32 dst_ip = __builtin_bswap32(ip->daddr);
       if(unlikely(stats.batch_manage_tail_counter >= stats.batch_manage_tail)){
         ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, i);
         stats.batch_manage_tail_counter = 0;
       }
-      struct icmphdr *icmp = (struct icmphdr *)(pkt + sizeof(struct ethhdr) + ip->ihl * 4);
-      bool processed = ping_reply(eth, ip, icmp, &stats, i, rx_ring, tx_ring);
+      bool pass = false;
+      bool processed = false;
+      /* Temporary hardcoded testing the logic 
+       * Note that network byte orders are big endian, 
+       * and the test value is the reverse of sender ip, which is used in local lab when development.
+       * Firewalling logic will convert the IP addresses when rule is added, instead of reversing ip->saddr every time.
+       */
+      u32 allowed_ip = 0x0200000a;
+      if(unlikely(ip->saddr != allowed_ip)){
+        pass = false;
+      }else {
+      pass = true;
+      }
+      struct icmphdr *icmp = NULL;
+      if(likely(pass == true)) {icmp = (struct icmphdr *)(pkt + sizeof(struct ethhdr) + ip->ihl * 4);}
+      if(likely(pass == true)) {processed = ping_reply(eth, ip, icmp, &stats, i, rx_ring, tx_ring);}
       wmb();
       rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
       rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024) + (i * 2048);
       rx_ring[i].read.hdr_addr = 0;
       wmb();
+      if(unlikely(pass != processed)){
+        /* impossible condition, proves that there's a huge logical error in fw logic. */
+        return EPIPE;
+      }
       i = IXGBE_BUFFER_ADVANCE(i, 1);
       if(unlikely(!processed)){
         continue;
