@@ -11,6 +11,7 @@
 #include <x86intrin.h>
 #include "hdr/hdr_histogram.h"
 #include <sched.h>
+#include <sys/mman.h>
 
 #include "../selftests/selftests.h"
 #include "base.h"
@@ -67,6 +68,11 @@ int main(const int argc, char** argv) {
   }
   err = ixgbe_probe(&ixgbe_adapter);
   if (unlikely(err != 0)) {
+    return -err;
+  }
+  err = (mlockall(MCL_CURRENT | MCL_FUTURE));
+  if (unlikely(err != 0)) {
+    write(STDERR_FILENO,"mlockall failed\n",16);
     return -err;
   }
   union ixgbe_adv_rx_desc *rx_ring = (union ixgbe_adv_rx_desc *)ixgbe_adapter.rx_base;
