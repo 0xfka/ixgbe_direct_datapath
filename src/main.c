@@ -1,7 +1,6 @@
 #include <errno.h>
 #include <linux/if_ether.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <xmmintrin.h>
@@ -10,6 +9,8 @@
 #include <netinet/ip_icmp.h>
 #include <signal.h>
 #include <x86intrin.h>
+#include "hdr/hdr_histogram.h"
+#include <sched.h>
 
 #include "../selftests/selftests.h"
 #include "base.h"
@@ -20,7 +21,6 @@
 struct hw ixgbe_adapter __attribute__((aligned(64))) = {0};
 static struct ixgbe_stats stats = {0};
 volatile sig_atomic_t run = true;
-static u64 cycle_samples[99999999]; 
 void handle_sigint(int sig) {
     run = false;
 }
@@ -87,7 +87,8 @@ int main(const int argc, char** argv) {
   */
   stats.batch_tx_transmit = 0;
   u32 i = ixgbe_read_reg(&ixgbe_adapter, IXGBE_RDH);
-  static u32 sample_idx = 0;
+  struct hdr_histogram* latency_hist;
+  hdr_init(1, 10000000, 3, &latency_hist);
   while(run){
     barrier();
     if(likely(rx_ring[i].wb.status_error & IXGBE_RXD_STAT_DD)){
@@ -143,11 +144,8 @@ int main(const int argc, char** argv) {
       stats.batch_tx_counter++;
       }
       end_cycles = __rdtsc();
-      cycle_samples[sample_idx] = end_cycles - start_cycles;
-      sample_idx++;
+      hdr_record_value(latency_hist, end_cycles - start_cycles);      
       }
   }
-  for(u64 j = 0; j < (sample_idx ); j++) {
-    printf("%lu\n", cycle_samples[j]);
-}
+  hdr_percentiles_print(latency_hist, stdout, 5, 1.0, CLASSIC);
 }
