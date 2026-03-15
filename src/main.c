@@ -4,9 +4,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <xmmintrin.h>
-#include <netinet/ip.h>
-#include <netinet/if_ether.h>
-#include <netinet/ip_icmp.h>
 #include <signal.h>
 #include <x86intrin.h>
 #include "hdr/hdr_histogram.h"
@@ -18,7 +15,6 @@
 #include "hw.h"
 #include "ixgbe.h"
 #include "pci.h"
-#include "datapath.h"
 struct hw ixgbe_adapter __attribute__((aligned(64))) = {0};
 static struct ixgbe_stats stats = {0};
 volatile sig_atomic_t run = true;
@@ -111,79 +107,10 @@ int main(const int argc, char** argv) {
         tx_clean = (tx_clean + 1) & (BUFFER_NUMBER -1);
         }
       }
-      /* Packet parsing logic is added temporarily to prove pointer arithmatics on structures.
-      * Since the driver cannot reply ARP's, static ARP configuration needed.
-      */
-      u8* pkt = (u8*)ixgbe_adapter.rx_base + (256 * 1024) + ( i * 2048);
-      u16 pkt_len = rx_ring[i].wb.length;
-      if(unlikely(pkt_len < sizeof(struct ethhdr) +sizeof(struct iphdr))){
-        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-        stats.drop++;
-        wmb();
-        i = (i + 1) & (BUFFER_NUMBER -1);
-        continue;
-      }
-      struct ethhdr *eth = (struct ethhdr *)pkt;
-      struct iphdr *ip = (struct iphdr *)(pkt + sizeof(struct ethhdr));
-      u16 given_len = ip->ihl *4;
-      if(unlikely(given_len < sizeof(struct iphdr) || given_len > 60)){
-        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-        stats.drop++;
-        wmb();
-        i = (i + 1) & (BUFFER_NUMBER -1);
-        continue;
-      }
-      stats.total_bytes_rx = stats.total_bytes_rx + ip->tot_len;
       if(unlikely(stats.batch_manage_tail_counter >= stats.batch_manage_tail)){
         ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, i);
         stats.batch_manage_tail_counter = 0;
       }
-      bool pass = false;
-      bool processed = false;
-      /* Temporary hardcoded testing the logic 
-       * Note that network byte orders are big endian, 
-       * and the test value is the reverse of sender ip, which is used in local lab when development.
-       * Firewalling logic will convert the IP addresses when rule is added, instead of reversing ip->saddr every time.
-       */
-      u32 allowed_ip = 0x0200000a;
-      if(unlikely(ip->saddr != allowed_ip)){
-        pass = false;
-      }else {
-      pass = true;
-      }
-      if(unlikely((((tx_write + 1) & (BUFFER_NUMBER - 1)) == tx_clean))){
-        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-        i = (i + 1) & ( BUFFER_NUMBER -1 );
-        stats.drop++;
-        wmb();
-        continue;
-      }
-      struct icmphdr *icmp = NULL;
-      u16 icmp_check = sizeof(struct ethhdr) + given_len + sizeof(struct icmphdr);
-      if(unlikely(pkt_len < icmp_check)){
-        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-        stats.drop++;
-        wmb();
-        i = (i + 1) & (BUFFER_NUMBER -1);
-        continue;
-      }
-      if(likely(pass == true)) {icmp = (struct icmphdr *)(pkt + sizeof(struct ethhdr) + ip->ihl * 4);}
-      if(likely(pass == true)) {processed = ping_reply(eth, ip, icmp, &stats, tx_write, rx_ring, tx_ring);}
-      wmb();
-      if(unlikely(!processed)){
-        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-        wmb();
-        i = (i + 1) & (BUFFER_NUMBER -1);
-        continue;
-      }
-      if(unlikely(pass != processed)){
-        /* impossible condition, proves that there's a huge logical error in fw logic. */
-        return EPIPE;
-      }
-      rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-      rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024 ) + (tx_write * 2048);
-      rx_ring[i].read.hdr_addr = 0;
-      wmb();
       i = (i + 1) & (BUFFER_NUMBER - 1);
       tx_write = (tx_write + 1) & (BUFFER_NUMBER -1);
       if(unlikely(stats.batch_tx_counter >= stats.batch_tx_transmit)){
