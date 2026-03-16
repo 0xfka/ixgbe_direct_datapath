@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <linux/if_ether.h>
+#include <netinet/in.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <xmmintrin.h>
@@ -15,6 +17,7 @@
 #include "hw.h"
 #include "ixgbe.h"
 #include "pci.h"
+#include "iex.h"
 struct hw ixgbe_adapter __attribute__((aligned(64))) = {0};
 static struct ixgbe_stats stats = {0};
 volatile sig_atomic_t run = true;
@@ -25,6 +28,10 @@ int main(const int argc, char** argv) {
   signal(SIGINT, handle_sigint);
   int err;
   err = ixgbe_test_ds();
+  if (unlikely(err != 0)) {
+    return -err;
+  }
+  err = iex_test_ds();
   if (unlikely(err != 0)) {
     return -err;
   }
@@ -114,7 +121,35 @@ int main(const int argc, char** argv) {
         ixgbe_write_reg(&ixgbe_adapter, IXGBE_RDT, i);
         stats.batch_manage_tail_counter = 0;
       }
-      bool processed = false;
+      /* Temporarily switched to true for benchmarking CPU cycles. */
+      bool processed = true;
+      /* Jumping directly from ethhdr (14), iphdr (20) and udphdr (8) */
+      struct IEX_TP_header *tp = (struct IEX_TP_header*)(pkt + 20 + 14 + 8);
+      if(unlikely(tp->version != 1)){
+        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
+        i = (i + 1) & ( BUFFER_NUMBER -1 );
+        wmb();
+        stats.irrelevant_packets++;
+        continue;
+      }
+      /* Tests msg count it's always 55 or 0, probably for complete minimum MTU val. */
+      printf("message count : %u\n", tp->mesg_count);
+      /* + 2 is for message length, which is after IEX TP header but doesn't a member of */
+      struct IEX_Quote_Update *iex = (struct IEX_Quote_Update*)((u8*)tp + 2 + sizeof(struct IEX_TP_header));
+      /* Note that one packet has 55 of this messages, and this if only checks the first. */
+      if(unlikely(iex->message_type!= IEX_QUM_MTYPE)){
+        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
+        i = (i + 1) & ( BUFFER_NUMBER -1 );
+        wmb();
+        stats.irrelevant_packets++;
+        continue;
+      }
+      printf("Symbol: %.8s | Bid: %u @ %.4f | Ask: %.4f @ %u\n", 
+        iex->symbol, 
+        iex->bid_size, 
+        (double)iex->bid_price / 10000.0,
+        (double)iex->ask_price / 10000.0,
+        iex->ask_size);
       if(unlikely((((tx_write + 1) & (BUFFER_NUMBER - 1)) == tx_clean))){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         i = (i + 1) & ( BUFFER_NUMBER -1 );
