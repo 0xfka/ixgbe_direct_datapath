@@ -132,24 +132,49 @@ int main(const int argc, char** argv) {
         stats.irrelevant_packets++;
         continue;
       }
-      /* Tests msg count it's always 55 or 0, probably for complete minimum MTU val. */
-      printf("message count : %u\n", tp->mesg_count);
-      /* + 2 is for message length, which is after IEX TP header but doesn't a member of */
-      struct IEX_Quote_Update *iex = (struct IEX_Quote_Update*)((u8*)tp + 2 + sizeof(struct IEX_TP_header));
-      /* Note that one packet has 55 of this messages, and this if only checks the first. */
-      if(unlikely(iex->message_type!= IEX_QUM_MTYPE)){
+      #ifdef pre_market
+      if(unlikely(tp->mesg_count <= 0)){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         i = (i + 1) & ( BUFFER_NUMBER -1 );
         wmb();
         stats.irrelevant_packets++;
         continue;
       }
-      printf("Symbol: %.8s | Bid: %u @ %.4f | Ask: %.4f @ %u\n", 
-        iex->symbol, 
-        iex->bid_size, 
-        (double)iex->bid_price / 10000.0,
-        (double)iex->ask_price / 10000.0,
-        iex->ask_size);
+      u8* msg = (u8*)tp + sizeof(struct IEX_TP_header); 
+      for(u32 m = 0; m < tp->mesg_count; m++){
+      u16 msg_len = *(u16*)msg;
+      u8 msg_type = *(u8*)(msg + 2);
+      switch (msg_type) {
+        case IEX_SSPTSM:{
+      struct IEX_Short_Sale_Price_Test *iex = (struct IEX_Short_Sale_Price_Test*)(msg + 2);
+          printf("%.8s\n", iex->symbol);
+          break;
+        }
+        case IEX_SYSTEM_EVENT:{
+      struct IEX_System_Event *iex = (struct IEX_System_Event*)(msg + 2);
+        if(unlikely(iex->IEX_System_Event_t == IEX_END_OF_MESSAGES || 
+          iex->IEX_System_Event_t == IEX_END_OF_SYSTEM_HOURS || 
+          iex->IEX_System_Event_t == IEX_END_OF_REGULAR_MARKET_HOURS)){
+          printf("Market closed, quitting..\n");
+          run = false;
+        }
+        if(unlikely(iex->IEX_System_Event_t == IEX_START_OF_REGULAR_MARKET_HOURS )){
+          printf("market hours start\n");
+          run = false;
+        }
+        break;
+        }
+        default:{
+        rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
+        i = (i + 1) & ( BUFFER_NUMBER -1 );
+        wmb();
+        stats.irrelevant_packets++;
+        break;
+        }
+      }
+      msg += msg_len;
+    }
+    #endif
       if(unlikely((((tx_write + 1) & (BUFFER_NUMBER - 1)) == tx_clean))){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         i = (i + 1) & ( BUFFER_NUMBER -1 );
