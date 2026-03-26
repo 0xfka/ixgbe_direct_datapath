@@ -127,16 +127,16 @@ int main(const int argc, char** argv) {
       struct IEX_TP_header *tp = (struct IEX_TP_header*)(pkt + 20 + 14 + 8);
       if(unlikely(tp->version != 1)){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-        i = (i + 1) & ( BUFFER_NUMBER -1 );
         wmb();
+        i = (i + 1) & ( BUFFER_NUMBER -1 );
         stats.irrelevant_packets++;
         continue;
       }
       #ifdef pre_market
       if(unlikely(tp->mesg_count <= 0)){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
-        i = (i + 1) & ( BUFFER_NUMBER -1 );
         wmb();
+        i = (i + 1) & ( BUFFER_NUMBER -1 );
         stats.irrelevant_packets++;
         continue;
       }
@@ -174,9 +174,9 @@ int main(const int argc, char** argv) {
     #endif
       if(unlikely((((tx_write + 1) & (BUFFER_NUMBER - 1)) == tx_clean))){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
+        wmb();
         i = (i + 1) & ( BUFFER_NUMBER -1 );
         stats.drop++;
-        wmb();
         continue;
       }
       if(unlikely(!processed)){
@@ -186,9 +186,9 @@ int main(const int argc, char** argv) {
         continue;
       }
       rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
+      wmb();
       rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024 ) + (tx_write * 2048);
       rx_ring[i].read.hdr_addr = 0;
-      wmb();
       i = (i + 1) & (BUFFER_NUMBER - 1);
       tx_write = (tx_write + 1) & (BUFFER_NUMBER -1);
       if(unlikely(stats.batch_tx_counter >= stats.batch_tx_transmit)){
