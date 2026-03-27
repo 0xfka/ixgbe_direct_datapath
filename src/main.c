@@ -130,7 +130,6 @@ int main(const int argc, char** argv) {
         stats.irrelevant_packets++;
         continue;
       }
-      #ifdef pre_market
       static bool seqnum_first_pkt = true;
       static bool sessionid_first_pkt = true;
       static u32 expected_session_id;
@@ -188,7 +187,6 @@ int main(const int argc, char** argv) {
       }
       msg += msg_len;
     }
-    #endif
       if(unlikely((((tx_write + 1) & (BUFFER_NUMBER - 1)) == tx_clean))){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         wmb();
