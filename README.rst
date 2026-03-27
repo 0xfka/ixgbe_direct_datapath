@@ -1,11 +1,40 @@
-Userspace NIC driver experiment for low latency workloads
-==============================================
-This repository contains a proof-of-concept ixgbe driver for the architecture detailed in
-`Architectural design principles`_.
+Application (IEX Exchange) logic inlined userspace NIC driver from scratch
+==========================================================================
+This repository contains a userspace inlined NIC driver experiment, with the architecture detailed in `Architectural design principles`_. 
 Although the architecture is designed for mlx5 driver, proof of concept driver is leveraging 82599.
 
-Some of the reasons are:
+Installation
+============
+Prerequisites
+^^^^^^^^^^^^^
+*    **1 x 2 MB hugepage**
+add via command:
 
+.. code-block:: console
+
+    echo x > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+
+1 hugepage is enough for this driver.
+
+-    82599 Chipset NIC
+-    Cmake 3.10 or higher
+-    zlib1g for hdr histogram
+-    Any C compiler that supports C99, which was released on 1999.
+Installation commands can be found on Github Matrix Build workflow.
+
+Build from source 
+^^^^^^^^^^^^^^^^^
+.. code-block:: console
+
+    git clone https://github.com/0xfka/ixgbe_low_latency_driver
+
+    cd ixgbe_low_latency_driver
+    cmake -B build && cmake --build build -j$(nproc)
+
+Building on popular distros are tested via Github Actions. If you can see a green tick on the repository, chances on you probably doesn't encounter any errors.
+
+Why 82599:
+==========
 Direct Register Manipulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Instead of sending commands to a "mailbox[1]", direct register manipulation is considered more transparent when it comes to understanding & optimizing at a low level.
@@ -22,13 +51,14 @@ As an ASIC released in July 2011, of course it's simpler than modern NIC ASICs. 
 This work aims to prove the architecture and become aware of situations not taken into consideration.
 
 Architectural design principles
--------------------------------
+============================== 
 
-Radical Cropping
-^^^^^^^^^^^^^^^^^
+Path Stripping
+^^^^^^^^^^^^^^
 
 This title includes keeping everything that doesn't help us achieve the goal out. For example, in this proof of concept using the ICMP protocol, checksums are not validated upon ingress and will not be recalculated when replying. Instead, RFC 1624 is used.
 Destination IP is not going to be checked. Instead, the logic will just switch destination and source IP's. As can be seen in these points, a new packet will not be generated. Instead, received packet will be edited and bumped to wire as soon as possible.
+RFC 1624 design is tested on IMCP release, and also the increasement was hardcoded, which even lowers the cost.
 
 Inlining Workload with Driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -36,10 +66,18 @@ Inlining Workload with Driver
 This section holds a critical place among the ideas of this project. Even if it is hard to maintain, portability is impossible on NIC-specific logic, (e.g, Initializing 82599 part in the TO-DO) if it's profitable, it can be done.
 If this repository succeeds and continued, this question will be answered in an article. In the continued implementation, Mellanox ASICs will be used, and features like WQE inlining are leveraged.
 HFT vision of Mellanox dates back to 2012, perhaps even earlier. See https://network.nvidia.com/files/pdf/whitepapers/SB_HighFreq_Trading.pdf for details.
+This design allows us to prevent swapping between user - kernel spaces, which can be proven via perf:      
+
+.. code-block:: console
+
+    $5.421540387 seconds time elapsed
+
+    $5.416721000 seconds user
+    $0.002252000 seconds sys
 
 TO-DO
 -----
-
+* |checked| **Release 0.1 - Ping reply**
 * |checked| **Setting Environment**
     -  |checked| Unbind the device from kernel's control permanently.
 By permanently, preventing kernel from taking control undesirably is meant.
@@ -47,18 +85,19 @@ By permanently, preventing kernel from taking control undesirably is meant.
 With 2 MB hugepage usage, TLB misses are reduced with the cost of 2 MB memory.
 **Tested on bare metal.**
 
-* |ballot| **Initializing 82599**
+* |checked| **Initializing 82599**
     -  |checked| Architectural designs for performance.
 Some of these designs are documented in this file, or at the /docs directory.
-    -  |ballot| Implement register manipulations following the design made for initializing.
-Work in progress. With Pull Requests section, it can be observed.
-    -  |ballot| Tx/Rx ring management.
+    -  |checked| Implement register manipulations following the design made for initializing.
+    -  |checked| Tx/Rx ring management.
 
-* |ballot| **Rewriting ICMP from scratch to benchmark**
-    -  |ballot| Implement logic based on design made.
-    -  |ballot| Collecting metrics and analysis.
+* |checked| **Rewriting basic ICMP reply logic from scratch to benchmark**
+    -  |checked| Implement logic based on design made.
+    -  |checked| Collecting metrics and analysis.
 After that analysis, implementing future logic will be decided.
-
+* |checked| **Release 1.0 - IEX Exchange **
+    - |checked| Fail-fast on flow control & flow integrity, which provided via sequence numbers & session ID's.
+    - |ballot| Designing a B plan for losing flow integrity, such as refilling.
 [1] Mellanox Firmware Design Architecture, see Programmer's Reference Manual. Could not refer to a topic or page because it's mentioned in many. Note that PRM's are not public, but ConnectX-4.
 
 .. |ballot| unicode:: U+2610 .. empty box
