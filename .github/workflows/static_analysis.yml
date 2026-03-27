@@ -21,6 +21,6 @@ jobs:
       - name: Build
         run: cmake -B build && cmake --build build -j$(nproc)
       - name: cppcheck
-        run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --suppress=missingIncludeSystem -I . .
+        run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --suppress=missingIncludeSystem -I src/ selftests/
       - name: check style
-        run: clang-format -style=Google -n $(find . -name '*.c')
+        run: clang-format -style=Google -n $(find src selftests -name "*.c")
