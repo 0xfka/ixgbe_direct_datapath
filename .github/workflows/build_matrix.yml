@@ -1,0 +1,40 @@
+name: Matrix Build 
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: "ubuntu:24.04"
+            setup: "apt update && apt install -y build-essential cmake git pkg-config zlib1g-dev"
+          - distro: "ubuntu:22.04"
+            setup: "apt update && apt install -y build-essential cmake git pkg-config zlib1g-dev"
+          - distro: "fedora:38"
+            setup: "dnf install -y gcc gcc-c++ make cmake git zlib-devel pkg-config"
+          - distro: "archlinux:latest"
+            setup: "pacman -Sy --noconfirm base-devel cmake git zlib pkg-config"
+
+    container:
+      image: ${{ matrix.distro }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: ${{ matrix.setup }}
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Driver
+        run: cmake --build build -j$(nproc)
