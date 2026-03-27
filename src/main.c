@@ -2,7 +2,6 @@
 #include <linux/if_ether.h>
 #include <netinet/in.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <xmmintrin.h>
@@ -36,8 +35,6 @@ int main(const int argc, char** argv) {
     return -err;
   }
   if (unlikely(argc < 2)) {
-    write(STDERR_FILENO,
-          "usage: ./binary <pci_addr>. use lspci for PCI addr.\n", 52);
     return EINVAL;
   }
   if (unlikely(argv[1] == NULL)) {
@@ -75,7 +72,6 @@ int main(const int argc, char** argv) {
   }
   err = (mlockall(MCL_CURRENT | MCL_FUTURE));
   if (unlikely(err != 0)) {
-    write(STDERR_FILENO,"mlockall failed\n",16);
     return -err;
   }
   union ixgbe_adv_rx_desc *rx_ring = (union ixgbe_adv_rx_desc *)ixgbe_adapter.rx_base;
@@ -155,11 +151,9 @@ int main(const int argc, char** argv) {
         if(unlikely(iex->IEX_System_Event_t == IEX_END_OF_MESSAGES || 
           iex->IEX_System_Event_t == IEX_END_OF_SYSTEM_HOURS || 
           iex->IEX_System_Event_t == IEX_END_OF_REGULAR_MARKET_HOURS)){
-          printf("Market closed, quitting..\n");
           run = false;
         }
         if(unlikely(iex->IEX_System_Event_t == IEX_START_OF_REGULAR_MARKET_HOURS )){
-          printf("market hours start\n");
           run = false;
         }
         break;
