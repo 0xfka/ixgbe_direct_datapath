@@ -124,6 +124,8 @@ int main(const int argc, char** argv) {
       if(unlikely(tp->version != 1)){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         wmb();
+        rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024) + ( i * 2048);
+        rx_ring[i].read.hdr_addr = 0;
         i = (i + 1) & ( BUFFER_NUMBER -1 );
         stats.irrelevant_packets++;
         continue;
@@ -136,6 +138,8 @@ int main(const int argc, char** argv) {
       if(unlikely(tp->mesg_count <= 0)){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         wmb();
+        rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024) + ( i * 2048);
+        rx_ring[i].read.hdr_addr = 0;
         i = (i + 1) & ( BUFFER_NUMBER -1 );
         stats.irrelevant_packets++;
         continue;
@@ -188,14 +192,19 @@ int main(const int argc, char** argv) {
       if(unlikely((((tx_write + 1) & (BUFFER_NUMBER - 1)) == tx_clean))){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         wmb();
+        rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024) + ( i * 2048);
+        rx_ring[i].read.hdr_addr = 0;
         i = (i + 1) & ( BUFFER_NUMBER -1 );
-        stats.drop++;
+        stats.ring_full_drop++;
         continue;
       }
       if(unlikely(!processed)){
         rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;
         wmb();
-        i = (i + 1) & (BUFFER_NUMBER -1);
+        rx_ring[i].read.pkt_addr = (u64)ixgbe_adapter.rx_base_phy + (256 * 1024) + ( i * 2048);
+        rx_ring[i].read.hdr_addr = 0;
+        i = (i + 1) & ( BUFFER_NUMBER -1 );
+        stats.irrelevant_packets++;
         continue;
       }
       rx_ring[i].wb.status_error &= ~IXGBE_RXD_STAT_DD;

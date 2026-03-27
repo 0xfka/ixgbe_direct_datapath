@@ -94,7 +94,7 @@ struct ixgbe_stats {
   u32 total_bytes_rx;
   u32 total_bytes_tx;
   u32 batch_tx_transmit;
-  u32 drop;
+  u32 ring_full_drop;
 };
 #define IXGBE_SET_BITS(val, bits) ((val) |= (bits))
 #define IXGBE_CLEAR_BITS(val, bits) ((val) &= ~(bits))
