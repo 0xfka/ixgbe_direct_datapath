@@ -70,10 +70,10 @@ This design allows us to prevent swapping between user - kernel spaces, which ca
 
 .. code-block:: console
 
-    $5.421540387 seconds time elapsed
+    5.421540387 seconds time elapsed
 
-    $5.416721000 seconds user
-    $0.002252000 seconds sys
+    5.416721000 seconds user
+    0.002252000 seconds sys
 
 TO-DO
 -----
@@ -94,10 +94,23 @@ Some of these designs are documented in this file, or at the /docs directory.
 * |checked| **Rewriting basic ICMP reply logic from scratch to benchmark**
     -  |checked| Implement logic based on design made.
     -  |checked| Collecting metrics and analysis.
-After that analysis, implementing future logic will be decided.
-* |checked| **Release 1.0 - IEX Exchange **
+
+* |checked| **Release 1.0 - IEX Exchange**
     - |checked| Fail-fast on flow control & flow integrity, which provided via sequence numbers & session ID's.
     - |ballot| Designing a B plan for losing flow integrity, such as refilling.
+
+Contributing
+============
+Github Pull requests and/or issues section(s) may be used for contributing/feature request/questions or more.
+pre-commit is covering the basics before sending patches. To add,
+
+.. code-block:: console
+
+    # Change where git looks for pre-commits, directory-wide only.
+    git config core.hooksPath .githooks
+    # Allow the script to be executed
+    chmod +x .githooks/pre-commit
+    
 [1] Mellanox Firmware Design Architecture, see Programmer's Reference Manual. Could not refer to a topic or page because it's mentioned in many. Note that PRM's are not public, but ConnectX-4.
 
 .. |ballot| unicode:: U+2610 .. empty box
