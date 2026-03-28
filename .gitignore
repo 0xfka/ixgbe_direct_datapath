@@ -1,5 +1,3 @@
 driver
 *.o
 *.swp
-.vscode/
-compile_commands.json

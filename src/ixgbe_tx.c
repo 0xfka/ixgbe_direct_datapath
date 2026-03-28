@@ -1,10 +1,11 @@
-#include "base.h"
-#include "hw.h"
 #include <asm-generic/errno.h>
 #include <errno.h>
-#include "ixgbe.h"
 #include <unistd.h>
-int tx_ring_probe(const struct hw* hw){
+
+#include "base.h"
+#include "hw.h"
+#include "ixgbe.h"
+int tx_ring_probe(const struct hw* hw) {
   /* divide base addr to low and high */
   u64 addr_base = (uintptr_t)(hw->tx_base_phy);
   u32 addr_low = addr_base & 0xFFFFFFFF;
@@ -37,7 +38,7 @@ int tx_ring_probe(const struct hw* hw){
   /* write memory addresses */
   ixgbe_write_reg(hw, IXGBE_TDBAL, addr_low);
   ixgbe_write_reg(hw, IXGBE_TDBAH, addr_high);
-  ixgbe_write_reg(hw,IXGBE_TDLEN,TDLEN_VAL);
+  ixgbe_write_reg(hw, IXGBE_TDLEN, TDLEN_VAL);
   /* reset head and tail */
   ixgbe_write_reg(hw, IXGBE_TDH, 0x0);
   ixgbe_write_reg(hw, IXGBE_TDT, 0x0);
@@ -56,21 +57,21 @@ int tx_ring_probe(const struct hw* hw){
     if (likely(delay < 1000)) delay *= 2;
   }
   return -ETIMEDOUT;
-  tx_ready:;
+tx_ready:;
   return 0;
 }
 
-  /* According to errata 13, rev 4.3.3,
-   * Changes in the internal link-speed might hang transmit.
-   * This function issues the workaround specified. Should be called if
-   * Tx cannot be initialized.
-  */
-void clock_switching_workaround(const struct hw* hw){
+/* According to errata 13, rev 4.3.3,
+ * Changes in the internal link-speed might hang transmit.
+ * This function issues the workaround specified. Should be called if
+ * Tx cannot be initialized.
+ */
+void clock_switching_workaround(const struct hw* hw) {
   u32 read_val = ixgbe_read_reg(hw, IXGBE_AUTOC2);
   /* 19th bit is reserved ( undocumented ) in datasheet, but errata says
-  * it delays link-up flow by 10 microseconds. Probably a register used to be internal,
-  * but published in errata...
-  */
-  IXGBE_SET_BITS(read_val,(1 << 19));
+   * it delays link-up flow by 10 microseconds. Probably a register used to be
+   * internal, but published in errata...
+   */
+  IXGBE_SET_BITS(read_val, (1 << 19));
   ixgbe_write_reg(hw, IXGBE_AUTOC2, read_val);
 }

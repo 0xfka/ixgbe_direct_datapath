@@ -70,31 +70,31 @@ int unbind(const char* pci, const char* target_drv) {
   }
   close(fd);
   /* Enable DMA */
-  len = snprintf(path, sizeof(path),"/sys/bus/pci/devices/%s/config",pci);
+  len = snprintf(path, sizeof(path), "/sys/bus/pci/devices/%s/config", pci);
   if (unlikely(len < 0)) return -EINVAL;
   if (unlikely((size_t)len >= sizeof(path))) return -ENAMETOOLONG;
   fd = open(path, O_RDWR);
   if (unlikely(fd < 0)) {
     return -(errno ? errno : EIO);
   }
-  if (lseek(fd, 4, SEEK_SET) != 4){
+  if (lseek(fd, 4, SEEK_SET) != 4) {
     save_errno = errno;
     close(fd);
     return -(save_errno ? save_errno : EIO);
   }
   u16 read_val = 0;
-  if (read(fd, &read_val, 2) != 2){
+  if (read(fd, &read_val, 2) != 2) {
     save_errno = errno;
     close(fd);
     return -(save_errno ? save_errno : EIO);
   }
   read_val |= 1 << 2;
-  if (lseek(fd, 4, SEEK_SET) != 4){
+  if (lseek(fd, 4, SEEK_SET) != 4) {
     save_errno = errno;
     close(fd);
     return -(save_errno ? save_errno : EIO);
   }
-  if (write(fd, &read_val, 2) != 2){
+  if (write(fd, &read_val, 2) != 2) {
     save_errno = errno;
     close(fd);
     return -(save_errno ? save_errno : EIO);

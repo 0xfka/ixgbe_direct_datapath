@@ -15,23 +15,23 @@ int ixgbe_probe(const struct hw* hw) {
   ixgbe_write_reg(hw, IXGBE_EIMC, 0x7FFFFFFF);
   u32 err = ixgbe_read_reg(hw, IXGBE_EIMS);
   if (unlikely(err != 0)) return -EIO;
-  master_disable:;
-  u32 ctrl = ixgbe_read_reg(hw,IXGBE_CTRL);
-  IXGBE_SET_BITS(ctrl,IXGBE_CTRL_MASTER);
-  ixgbe_write_reg(hw,IXGBE_CTRL,ctrl);
+master_disable:;
+  u32 ctrl = ixgbe_read_reg(hw, IXGBE_CTRL);
+  IXGBE_SET_BITS(ctrl, IXGBE_CTRL_MASTER);
+  ixgbe_write_reg(hw, IXGBE_CTRL, ctrl);
   /* Datasheet doesn't specifies a timeout for master disable. */
   delay = 10;
   for (u16 i = 0; i < 788; i++) {
-  ctrl = ixgbe_read_reg(hw,IXGBE_STATUS);
-  if (likely(IXGBE_IS_CLEAR(ctrl, IXGBE_STATUS_MASTER))) goto global_reset;
-      usleep(delay);
+    ctrl = ixgbe_read_reg(hw, IXGBE_STATUS);
+    if (likely(IXGBE_IS_CLEAR(ctrl, IXGBE_STATUS_MASTER))) goto global_reset;
+    usleep(delay);
     if (likely(delay < 1000)) delay *= 2;
   }
   if (unlikely(count_crit == max_retr_crit)) return -EDEADLK;
   count_crit++;
   master_disable_workaround(hw);
   goto master_disable;
-  global_reset:;
+global_reset:;
   /* Global Reset */
   ctrl = ixgbe_read_reg(hw, IXGBE_CTRL);
   IXGBE_SET_BITS(ctrl, IXGBE_CTRL_RST | IXGBE_CTRL_LRST);
@@ -122,50 +122,50 @@ dmaiok:;
   IXGBE_SET_BITS(read_val, IXGBE_FCTRL_MPE);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_SBP);
   IXGBE_CLEAR_BITS(read_val, IXGBE_FCTRL_UPE);
-  ixgbe_write_reg(hw,IXGBE_FCTRL,read_val);
+  ixgbe_write_reg(hw, IXGBE_FCTRL, read_val);
   /* Out of scope, disabled. */
   read_val = ixgbe_read_reg(hw, IXGBE_VLNCTRL);
   IXGBE_CLEAR_BITS(read_val, IXGBE_VLNCTRL_VFE);
-  ixgbe_write_reg(hw,IXGBE_VLNCTRL,read_val);
-  read_val = ixgbe_read_reg(hw,IXGBE_MCSTCTRL);
-  IXGBE_CLEAR_BITS(read_val,IXGBE_MCSTCTRL_MFE);
-  ixgbe_write_reg(hw,IXGBE_MCSTCTRL,read_val);
-  /*  
-   * According to errata 44, spec update rev 4.3.3,   
+  ixgbe_write_reg(hw, IXGBE_VLNCTRL, read_val);
+  read_val = ixgbe_read_reg(hw, IXGBE_MCSTCTRL);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_MCSTCTRL_MFE);
+  ixgbe_write_reg(hw, IXGBE_MCSTCTRL, read_val);
+  /*
+   * According to errata 44, spec update rev 4.3.3,
    * header splitting should not be enabled.
    */
   read_val = ixgbe_read_reg(hw, IXGBE_PSRTYPE);
   IXGBE_CLEAR_BITS(read_val, IXGBE_PSRTYPE_SPLIT_MASK);
   ixgbe_write_reg(hw, IXGBE_PSRTYPE, read_val);
   /*
-   * There's erratas that include unstable behavior 
-   * on checksums (43, 60 ,66) . As decided, 
-   * RFC 1624 will be used. 
-    */
-  read_val = ixgbe_read_reg(hw,IXGBE_RXCSUM);
-  IXGBE_CLEAR_BITS(read_val,IXGBE_RXCSUM_IPPCSE);
-  IXGBE_CLEAR_BITS(read_val,IXGBE_RXCSUM_PCSD);
-  ixgbe_write_reg(hw,IXGBE_RXCSUM,read_val);
+   * There's erratas that include unstable behavior
+   * on checksums (43, 60 ,66) . As decided,
+   * RFC 1624 will be used.
+   */
+  read_val = ixgbe_read_reg(hw, IXGBE_RXCSUM);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_RXCSUM_IPPCSE);
+  IXGBE_CLEAR_BITS(read_val, IXGBE_RXCSUM_PCSD);
+  ixgbe_write_reg(hw, IXGBE_RXCSUM, read_val);
   /* 1 core polling data path architecture invalids RSS usage.*/
   ixgbe_write_reg(hw, IXGBE_RQTC, 0x0);
   /**/
-  read_val = ixgbe_read_reg(hw,IXGBE_RFCTL);
-  /* Disabled, may add latency to buffer packets. 
+  read_val = ixgbe_read_reg(hw, IXGBE_RFCTL);
+  /* Disabled, may add latency to buffer packets.
    * Also, may cause TLP overhead on PCI but goal is lowest latency.*/
   IXGBE_SET_BITS(read_val, IXGBE_RFCTL_RSC_DIS);
-  /* Disabled to prevent latency emerging from ASIC checking 
+  /* Disabled to prevent latency emerging from ASIC checking
    * the packet is NFS or not. */
   IXGBE_SET_BITS(read_val, IXGBE_RFCTL_NFSW_DIS);
   IXGBE_SET_BITS(read_val, IXGBE_RFCTL_NFSR_DIS);
   /* IPv6 disable and IP Fragment Split Disable
    *  will not set of 'for internal usage' warning. */
-  ixgbe_write_reg(hw,IXGBE_RFCTL,read_val);
+  ixgbe_write_reg(hw, IXGBE_RFCTL, read_val);
   /* Match PF pool with mac addr */
   read_val = ixgbe_read_reg(hw, IXGBE_MPSAR);
   IXGBE_SET_BITS(read_val, (1 << 0));
   ixgbe_write_reg(hw, IXGBE_MPSAR, read_val);
   /* Set receive buffer sizes */
-  read_val = ixgbe_read_reg(hw,IXGBE_SRRCTL);
+  read_val = ixgbe_read_reg(hw, IXGBE_SRRCTL);
   IXGBE_CLEAR_BITS(read_val, IXGBE_SRRCTL_BSIZEPACKET);
   IXGBE_SET_BITS(read_val, 1 << 1);
   IXGBE_CLEAR_BITS(read_val, IXGBE_SRRCTL_DESCTYPE);
@@ -195,9 +195,9 @@ int semaphore_acquire(const struct hw* hw, const ixgbe_swfw_sync_t acquire) {
   const u8 max_retr = 100;
   const u8 max_retr_crit = 3;
 semaphore_main:
-    /* Reset malfunction flags to prevent entering workaround unnecessarily*/
-     fw_malfunction = false;
-     sw_malfunction = false;
+  /* Reset malfunction flags to prevent entering workaround unnecessarily*/
+  fw_malfunction = false;
+  sw_malfunction = false;
   /* ~19 ms at total. +~10ms means malfunctional behavior from Software. */
   delay = 10;
   for (u8 i = 0; i < 25; i++) {
@@ -290,29 +290,29 @@ int semaphore_release(const struct hw* hw, const ixgbe_swfw_sync_t acquire) {
   usleep(10000);
   return 0;
 }
-  /* According to errata 9, rev 4.3.3, 
-   * there are cases where PCIe Master Enable bit
-   * is not released. This function issues a Master Disable
-   * and the recommendations specified.
-  */
-void master_disable_workaround(const struct hw* hw){
+/* According to errata 9, rev 4.3.3,
+ * there are cases where PCIe Master Enable bit
+ * is not released. This function issues a Master Disable
+ * and the recommendations specified.
+ */
+void master_disable_workaround(const struct hw* hw) {
   /* Flush data path first */
-  u32 hlreg0 = ixgbe_read_reg(hw,IXGBE_HLREG0);
-  IXGBE_SET_BITS(hlreg0,IXGBE_HLREG0_LPBK);
-  ixgbe_write_reg(hw,IXGBE_HLREG0,hlreg0);
+  u32 hlreg0 = ixgbe_read_reg(hw, IXGBE_HLREG0);
+  IXGBE_SET_BITS(hlreg0, IXGBE_HLREG0_LPBK);
+  ixgbe_write_reg(hw, IXGBE_HLREG0, hlreg0);
   u32 rxctrl = ixgbe_read_reg(hw, IXGBE_RXCTRL);
   IXGBE_CLEAR_BITS(rxctrl, IXGBE_RXCTRL_RXEN);
-  ixgbe_write_reg(hw,IXGBE_RXCTRL,rxctrl);
-  u32 gcr_ext = ixgbe_read_reg(hw,IXGBE_GCR_EXT);
+  ixgbe_write_reg(hw, IXGBE_RXCTRL, rxctrl);
+  u32 gcr_ext = ixgbe_read_reg(hw, IXGBE_GCR_EXT);
   IXGBE_SET_BITS(gcr_ext, IXGBE_GCR_EXT_BUFFERS_CLEAR_FUNC);
-  ixgbe_write_reg(hw,IXGBE_GCR_EXT,gcr_ext);
+  ixgbe_write_reg(hw, IXGBE_GCR_EXT, gcr_ext);
   usleep(20);
   IXGBE_CLEAR_BITS(hlreg0, IXGBE_HLREG0_LPBK);
   IXGBE_CLEAR_BITS(gcr_ext, IXGBE_GCR_EXT_BUFFERS_CLEAR_FUNC);
   ixgbe_write_reg(hw, IXGBE_GCR_EXT, gcr_ext);
-  ixgbe_write_reg(hw,IXGBE_HLREG0,hlreg0);
+  ixgbe_write_reg(hw, IXGBE_HLREG0, hlreg0);
   u32 ctrl = ixgbe_read_reg(hw, IXGBE_CTRL);
-  IXGBE_SET_BITS(ctrl,IXGBE_CTRL_RST);
+  IXGBE_SET_BITS(ctrl, IXGBE_CTRL_RST);
   ixgbe_write_reg(hw, IXGBE_CTRL, ctrl);
   /* Larger than 1 microsecond is recommended */
   usleep(10);

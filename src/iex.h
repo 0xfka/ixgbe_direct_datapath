@@ -65,35 +65,35 @@ static inline int iex_test_ds() {
   if (unlikely(sizeof(struct IEX_Quote_Update) != 42)) {
     printf(
         "size of the IEX quote update data structure doesn't matches "
-        "documentation. %lu\n",
+        "documentation. %zu\n",
         sizeof(struct IEX_Quote_Update));
         return -EINVAL;
   }
   if (unlikely(sizeof(struct IEX_TP_header) != 40)) {
     printf(
         "size of the IEX Transportation header data structure doesn't matches "
-        "documentation. %lu\n",
+        "documentation. %zu\n",
         sizeof(struct IEX_TP_header));
         return -EINVAL;
   }
   if (unlikely(sizeof(struct IEX_Trading_Status) != 22)){
     printf(
         "size of the IEX Trading status data structure doesn't matches "
-        "documentation. %lu\n",
+        "documentation. %zu\n",
         sizeof(struct IEX_Trading_Status));
         return -EINVAL;
   }
   if (unlikely(sizeof(struct IEX_System_Event) != 10)){
     printf(
         "size of the IEX System Event data structure doesn't matches "
-        "documentation. %lu\n",
+        "documentation. %zu\n",
         sizeof(struct IEX_System_Event));
         return -EINVAL;
   }
   if (unlikely(sizeof (struct IEX_Short_Sale_Price_Test) != 19)){
     printf(
         "size of the IEX Short Sale Price data structure doesn't matches "
-        "documentation. %lu\n",
+        "documentation. %zu\n",
         sizeof(struct IEX_Short_Sale_Price_Test));
         return -EINVAL;
   }

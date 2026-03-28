@@ -41,10 +41,10 @@ rx_ready:
   read_val = ixgbe_read_reg(hw, IXGBE_SECRXCTRL);
   IXGBE_CLEAR_BITS(read_val, IXGBE_SECRXCTRL_RX_DIS);
   ixgbe_write_reg(hw, IXGBE_SECRXCTRL, read_val);
-  ixgbe_write_reg(hw, IXGBE_RXCTRL, IXGBE_RXCTRL_RXEN );
+  ixgbe_write_reg(hw, IXGBE_RXCTRL, IXGBE_RXCTRL_RXEN);
   u64 buffer_base_phy = hw->rx_base_phy + (256 * 1024);
-  union ixgbe_adv_rx_desc *rx_ring = (union ixgbe_adv_rx_desc *)hw->rx_base;
-  for (u16 i = 0; i < BUFFER_NUMBER; i++){
+  union ixgbe_adv_rx_desc* rx_ring = (union ixgbe_adv_rx_desc*)hw->rx_base;
+  for (u16 i = 0; i < BUFFER_NUMBER; i++) {
     rx_ring[i].read.pkt_addr = buffer_base_phy + (i * 2048);
     rx_ring[i].read.hdr_addr = 0;
   }
