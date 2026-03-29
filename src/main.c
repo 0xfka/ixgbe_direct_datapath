@@ -230,6 +230,7 @@ int main(const int argc, char** argv) {
       end_cycles = __rdtsc();
       hdr_record_value(latency_hist, end_cycles - start_cycles);
     }
+    _mm_pause();
   }
   hdr_percentiles_print(latency_hist, stdout, 5, 1.0, CLASSIC);
   hdr_close(latency_hist);
