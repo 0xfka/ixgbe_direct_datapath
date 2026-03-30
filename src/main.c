@@ -13,6 +13,7 @@
 
 #include "../selftests/selftests.h"
 #include "base.h"
+#include "exit_path.h"
 #include "hdr/hdr_histogram.h"
 #include "hw.h"
 #include "iex.h"
@@ -242,4 +243,5 @@ int main(const int argc, char** argv) {
   }
   hdr_percentiles_print(latency_hist, stdout, 5, 1.0, CLASSIC);
   hdr_close(latency_hist);
+  exit_entrypoint(&stats, &ixgbe_adapter);
 }
