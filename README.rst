@@ -14,7 +14,8 @@ add via command:
 
     echo x > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
 
-1 hugepage is enough for this driver.
+Since 2 hugepage is enough for this driver, already used hugepage count should be checked via Cat command.
+In NUMA, the path may change.
 
 -    82599 Chipset NIC
 -    Cmake 3.10 or higher
