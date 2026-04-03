@@ -17,7 +17,7 @@
 
 #include "base.h"
 /* 2 MB hugepage. */
-#define MGMT_SPSC_BUFFER_NUMBER 32766
+#define MGMT_SPSC_BUFFER_NUMBER 16384
 /* WIP, data will be added */
 struct __attribute__((aligned(64))) management {
   u64 test_data;
